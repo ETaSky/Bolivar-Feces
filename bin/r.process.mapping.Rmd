@@ -1,0 +1,39 @@
+---
+title: "Processing mapping file"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
+# Loading library here
+library(tidyverse)
+
+# Set paths
+LIBDIR="~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/lib/"
+WORKDIR = "~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians"
+setwd(WORKDIR)
+```
+
+# Import mapping files
+```{r, eval=FALSE}
+#grep("Mapping", list.files("data/"), fixed = T, value = T)
+Mapping_import <- lapply(paste0("data/", grep("Mapping", list.files("data/"), fixed = T, value = T)), FUN = function(x){read.delim(x, stringsAsFactors = F)})
+names(Mapping_import) <- c("VL", "VR15", "VR16")
+```
+
+# Create study specific mapping file
+## Mapping_MS_Bolivar_Amerindians
+(1) This mapping file includes only fecal samples
+(2) Included all Amerindians except for those who did not has Age information nor infants
+(3) Included only the visitor's baseline samples
+```{r}
+Work <- Mapping_import
+Work_VR15_BL <- Work$VR15 %>% group_by(Body_Site, Subject_ID) %>% filter(Days_of_study==min(Days_of_study)) %>% ungroup()
+Work_VR16_BL <- Work$VR16 %>% group_by(Body_Site, Subject_ID) %>% filter(Days_of_study==min(Days_of_study)) %>% ungroup()
+
+Mapping_common_header <- Reduce(intersect, list(colnames(Mapping_import$VL), colnames(Work_VR15_BL), colnames(Work_VR16_BL)))
+Mapping_MS <- do.call("rbind", lapply(list(Mapping_import$VL, Work_VR15_BL, Work_VR16_BL), FUN = function(x){x[Mapping_common_header]})) %>% filter(Body_Site=="Feces")
+save(Mapping_MS, file = "output/Mapping_MS_feces.Rdata")
+```
+
+

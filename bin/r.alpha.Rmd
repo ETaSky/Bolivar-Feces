@@ -1,0 +1,50 @@
+---
+title: "Alpha diversity analysis for the manuscript"
+output:
+  html_notebook:
+    number_sections: yes
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+author: Jincheng Wang
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
+# Loading library here
+library(tidyverse)
+library(extrafont)
+library(car)
+library(emmeans)
+library(segmented)
+
+LIBDIR="~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/lib/"
+WORKDIR = "~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/"
+setwd(WORKDIR)
+source(paste0(LIBDIR, "utils.R"))
+```
+
+## Import the data
+```{r, eval=FALSE}
+# These procedure has already been completed previously.
+
+## QIIME2 alpha output
+path1 <- paste0(WORKDIR, "data/qiime-alpha/")
+path2 <- sapply(list.files(path1), FUN = function(x){paste0(path1, x, "/data/alpha-diversity.tsv")})
+alpha_import <- lapply(path2, FUN = function(x){read.table(x, header = T, sep = "\t", row.names = 1, stringsAsFactors = F)})
+alpha <- merge_iter(alpha_import, by = 0)
+
+## Mapping files
+# grep("Mapping", list.files("data/"), fixed = T, value = T)
+Mapping_import <- lapply(paste0("data/", grep("Mapping", list.files("data/"), fixed = T, value = T)), FUN = function(x){read.delim(x, stringsAsFactors = F)})
+names(Mapping_import) <- c("VL", "VR15", "VR16")
+Mapping_common_header <- Reduce(intersect, lapply(Mapping_import, FUN = function(x){colnames(x)}))
+Mapping_final <- do.call("rbind", lapply(Mapping_import, function(x){x[Mapping_common_header]}))
+
+## Final alpha diversity object
+alpha_human <- merge(alpha, Mapping_final, by = 1)
+save(alpha_human, file = "output/alpha_imported_human-20181108.Rdata")
+```
+
+
