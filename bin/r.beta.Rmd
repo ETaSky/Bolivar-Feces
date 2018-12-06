@@ -1,0 +1,278 @@
+---
+title: "Beta diversity analysis for the manuscript"
+author: "Jincheng Wang"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+  html_notebook:
+    df_print: paged
+    number_sections: yes
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
+# Loading library here
+library(tidyverse)
+library(extrafont)
+library(broom)
+library(gridExtra)
+library(vegan)
+library(ape)
+library(ggpubr)
+
+LIBDIR="~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/lib/"
+WORKDIR = "~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/"
+setwd(WORKDIR)
+source(paste0(LIBDIR, "utils.R"))
+```
+
+**Color index**
+```{r}
+# Urban level
+Urban_color <- gg_color_hue(4)
+names(Urban_color) <- c("Very_low", "Low", "Medium", "High")
+# Ethnicity
+Ethnicity_color <- gg_color_hue(3)
+names(Ethnicity_color) <- c("SANEMA", "YEKWANA", "Visitors")
+```
+
+## Import data
+```{r, eval=FALSE}
+path1 <- "data/qiime-beta/"
+path2 <- sapply(list.files(path1), FUN = function(x){paste0(path1, x, "/data/distance-matrix.tsv")})
+beta_import <- lapply(path2, FUN = function(x){read.table(x, header = T, sep = "\t", row.names = 1, stringsAsFactors = F)})
+
+# Unweighted unifrac
+DM_uu <- beta_import[["unweighted_unifrac"]] %>% as.matrix() %>% as.dist()
+save(DM_uu, file = "output/DM_uu_all_20180530.Rdata")
+
+# Weighted unifrac
+DM_wu <- beta_import$weighted_unifrac %>% as.matrix() %>% as.dist()
+save(DM_wu, file = "output/DM_wu_all_20180530.Rdata")
+```
+```{r}
+# Mapping file
+load(file = "output/Mapping_MS_feces.Rdata")
+
+# Unweighted unifrac
+load("output/DM_uu_all_20180530.Rdata")
+# Weighted unifrac
+load("output/DM_wu_all_20180530.Rdata")
+Work_Map <- Mapping_MS_feces %>% mutate(Urban = ifelse(Ethnicity=="SANEMA", "Very_low", ifelse(Village=="Fiyakwanha", "Low", ifelse(SampleGroup=="Visitors", "High", "Medium"))) %>% factor(levels = c("Very_low", "Low", "Medium", "High")), Age_num = as.numeric(Age), Age_grp=ifelse(Age_num>=18, "Adults", "Children"))
+Work_Map_15 <- Work_Map %>% filter(Year==2015)
+Work_Map_16 <- Work_Map %>% filter(Year==2016)
+```
+
+## Fig 4 Differences in the fecal microbial communities of Amerindians children and adults from different urban levels
+```{r}
+Index <- "Unweighted_unifrac"
+```
+```{r}
+#a 2015
+Work_dm <- subset_dm_by_names(DM = DM_uu, Sname = Work_Map_15$SampleID)
+
+Work_dist <- tidy(Work_dm)
+Children_lst <- Work_Map_15$SampleID[Work_Map_15$Age_grp=="Children"]
+Work_dist_tmp <- Work_dist %>% mutate(Item1_child = item1 %in% Children_lst, Item2_child = item2 %in% Children_lst, Flag = Item1_child + Item2_child)
+
+# Children v Adults
+Work_dist_CvsA <- Work_dist_tmp %>% filter(Flag==1)
+Work_dist_CvsA_1 <- Work_dist_CvsA %>% mutate(ChildSampleID = if_else(Item1_child, item1, item2), AdultSampleID = if_else(Item1_child, item2, item1)) %>% select(ChildSampleID, AdultSampleID, distance)
+
+pull_sample_category <- function(x, key, cat, map){
+    cat_x <- pull(map, cat)[match(x, pull(map, key))]
+    return(cat_x)
+}
+
+Work_dist_CvsA_2 <- Work_dist_CvsA_1 %>% mutate(SameVillage = pull_sample_category(ChildSampleID, "SampleID", "Village", Work_Map_15)==pull_sample_category(AdultSampleID, "SampleID", "Village", Work_Map_15))
+Work_dist_CvsA_3 <- Work_dist_CvsA_2 %>% filter(SameVillage==T) %>% select(-SameVillage)
+Work_dist_CvsA_4 <- Work_dist_CvsA_3 %>% group_by(ChildSampleID) %>% summarise(Mean_dist = mean(distance), SD_dist = sd(distance))
+Work_dist_CvsA_5 <- Work_dist_CvsA_4 %>% merge(., Work_Map_15, by = 1, all.x = T, all.y = F)
+
+p1 <- ggplot(Work_dist_CvsA_5 %>% filter(SampleGroup=="Villagers"), aes(x = Age_num, y = Mean_dist, color = Urban)) +
+    geom_point(size = 1.5) +
+    geom_smooth(formula = y ~ log(x), method = "glm") + 
+    theme_Publication() + theme(aspect.ratio = 0.8, legend.direction = "vertical") +
+    scale_x_continuous(breaks = seq(0, 18, 2)) +
+    scale_y_continuous(breaks = seq(0.3, 1, 0.1), limits = c(0.35, 0.8)) +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    labs(x = "Age (Years)", y = "Unifrac distance", title = "Fit a y ~ log(x) line with 95% CI")
+
+p2 <- ggplot(Work_dist_CvsA_5 %>% filter(SampleGroup=="Villagers"), aes(x = Age_num, y = Mean_dist, color = Urban)) +
+    geom_point(size = 1.5) +
+    geom_smooth(method = "loess") + 
+    theme_Publication() + theme(aspect.ratio = 0.8, legend.direction = "vertical") +
+    scale_x_continuous(breaks = seq(0, 18, 2)) +
+    scale_y_continuous(breaks = seq(0.3, 1, 0.1), limits = c(0.35, 0.8)) +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    labs(x = "Age (Years)", y = "Unifrac distance", title = "Fit a loess smooth line with 95% CI")
+print(p2)
+
+p <- grid.arrange(p1, p2, nrow = 1, top = "Mean distance between a child and the adults from the same village")
+ggsave(plot = p, "output/figures/additional/Fig4a_UnweightedUnifrac_ChildDistance_2015.pdf", width = 7, useDingbats = F)
+```
+
+```{r}
+#b 2016
+Work_dm <- subset_dm_by_names(DM = DM_uu, Sname = Work_Map_16$SampleID)
+
+Work_dist <- tidy(Work_dm)
+Children_lst <- Work_Map_16$SampleID[Work_Map_16$Age_grp=="Children"]
+Work_dist_tmp <- Work_dist %>% mutate(Item1_child = item1 %in% Children_lst, Item2_child = item2 %in% Children_lst, Flag = Item1_child + Item2_child)
+
+# Children v Adults
+Work_dist_CvsA <- Work_dist_tmp %>% filter(Flag==1)
+Work_dist_CvsA_1 <- Work_dist_CvsA %>% mutate(ChildSampleID = if_else(Item1_child, item1, item2), AdultSampleID = if_else(Item1_child, item2, item1)) %>% select(ChildSampleID, AdultSampleID, distance)
+
+pull_sample_category <- function(x, key, cat, map){
+    cat_x <- pull(map, cat)[match(x, pull(map, key))]
+    return(cat_x)
+}
+
+Work_dist_CvsA_2 <- Work_dist_CvsA_1 %>% mutate(SameVillage = pull_sample_category(ChildSampleID, "SampleID", "Village", Work_Map_16)==pull_sample_category(AdultSampleID, "SampleID", "Village", Work_Map_16))
+Work_dist_CvsA_3 <- Work_dist_CvsA_2 %>% filter(SameVillage==T) %>% select(-SameVillage)
+Work_dist_CvsA_4 <- Work_dist_CvsA_3 %>% group_by(ChildSampleID) %>% summarise(Mean_dist = mean(distance), SD_dist = sd(distance))
+Work_dist_CvsA_5 <- Work_dist_CvsA_4 %>% merge(., Work_Map_16, by = 1, all.x = T, all.y = F)
+
+p1 <- ggplot(Work_dist_CvsA_5 %>% filter(SampleGroup=="Villagers"), aes(x = Age_num, y = Mean_dist, color = Urban)) +
+    geom_point(size = 1.5) +
+    geom_smooth(formula = y ~ log(x), method = "glm") + 
+    theme_Publication() + theme(aspect.ratio = 0.8, legend.direction = "vertical") +
+    scale_x_continuous(breaks = seq(0, 18, 2)) +
+    scale_y_continuous(breaks = seq(0.3, 1, 0.1), limits = c(0.35, 0.8)) +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    labs(x = "Age (Years)", y = "Unifrac distance", title = "Fit a y ~ log(x) line with 95% CI")
+
+p2 <- ggplot(Work_dist_CvsA_5 %>% filter(SampleGroup=="Villagers"), aes(x = Age_num, y = Mean_dist, color = Urban)) +
+    geom_point(size = 1.5) +
+    geom_smooth(method = "loess") + 
+    theme_Publication() + theme(aspect.ratio = 0.8, legend.direction = "vertical") +
+    scale_x_continuous(breaks = seq(0, 18, 2)) +
+    scale_y_continuous(breaks = seq(0.3, 1, 0.1), limits = c(0.35, 0.8)) +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    labs(x = "Age (Years)", y = "Unifrac distance", title = "Fit a loess smooth line with 95% CI")
+print(p2)
+
+p <- grid.arrange(p1, p2, nrow = 1, top = "Mean distance between a child and the adults from the same village")
+ggsave(plot = p, "output/figures/additional/Fig4b_UnweightedUnifrac_ChildDistance_2016.pdf", width = 7, useDingbats = F)
+```
+
+## Fig5
+```{r}
+Index <- "Unweighted_unifrac"
+```
+```{r}
+#a 2015
+Work_dm <- subset_dm_by_names(DM = DM_uu, Sname = Work_Map_15$SampleID)
+Work_pcoa <- pcoa(Work_dm)
+varPC1 <- round(Work_pcoa$values$Relative_eig[1]*100, 2)
+varPC2 <- round(Work_pcoa$values$Relative_eig[2]*100, 2)
+varPC3 <- round(Work_pcoa$values$Relative_eig[3]*100, 2)
+
+VL <- Work_pcoa$vectors[, 1:3] %>% merge(., Work_Map_15 %>% filter(SampleGroup=="Villagers"), by.x = 0, by.y = 1, all = F)
+VR <- Work_pcoa$vectors[, 1:3] %>% merge(., Work_Map_15 %>% filter(SampleGroup=="Visitors"), by.x = 0, by.y = 1)
+
+ggplot(data = VL, aes(x = Axis.1, y = Axis.2, color = Urban)) +
+    geom_point(size = 1.5) +
+    geom_point(size = 1.5, data = VR, aes(x = Axis.1, y = Axis.2), fill = "#EE82EE", color = "black", shape = 22) +
+    stat_ellipse() +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    scale_x_continuous(limits = c(-0.55, 0.4), breaks = seq(-0.4, 0.4, 0.20)) +
+    scale_y_continuous(limits = c(-0.55, 0.4), breaks = seq(-0.4, 0.4, 0.20)) +
+    facet_grid(~Age_grp) + theme_Publication() + theme(aspect.ratio = 1, panel.background = element_rect(colour = "black"), panel.grid.major = element_line(colour="grey90",linetype="dashed", size=0.2), legend.direction = "vertical") +
+    labs(x=paste0("PC1: ", varPC1, "% explained variation"), y=paste0("PC2: ", varPC2, "% explained variation"), color = "Urban level", title = paste0("PCoA on villagers and visitors in 2015, Unweighted Unifrac"), subtitle = "Rarefied at 10,000 reads per sample")
+set_panel_size(file = "output/figures/fig5a_unweightedunifrac_15.pdf", width = unit(2, "in"), height = unit(2, "in"), panel.size = T, useDingbats = F)
+
+ggplot(data = VL, aes(x = Age_grp, y = Axis.1, color = Urban)) +
+    geom_boxplot() + # Hide outlier point because geom_point will cover the outlier
+    scale_y_continuous(limits = c(-0.55, 0.4), breaks = seq(-0.4, 0.4, 0.20)) +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    stat_compare_means(method = "wilcox.test", label.y = 0.25, size = 2) +
+    coord_flip() +
+    theme_Publication() + theme(aspect.ratio = 0.3) +
+    labs(y = "PC1", x = "")
+set_panel_size(file = "output/figures/fig5a_unweightedunifrac_PC1_15.pdf", width = unit(2, "in"), height = unit(0.6, "in"), panel.size = T, useDingbats = F)
+
+ggplot(data = VL, aes(x = Age_grp, y = Axis.2, color = Urban)) +
+    geom_boxplot() + # Hide outlier point because geom_point will cover the outlier
+    scale_y_continuous(limits = c(-0.55, 0.4), breaks = seq(-0.4, 0.4, 0.20)) +
+    coord_flip() +
+    stat_compare_means(method = "wilcox.test", label.y = 0.25, size = 2) +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    theme_Publication() + theme(aspect.ratio = 0.3) +
+    labs(y = "PC2", x = "")
+set_panel_size(file = "output/figures/fig5a_unweightedunifrac_PC2_15.pdf", width = unit(2, "in"), height = unit(0.6, "in"), panel.size = T, useDingbats = F)
+
+## Stats
+Tmp <- Work_Map_15 %>% filter(SampleGroup=="Villagers")
+Work_dm <- subset_dm_by_names(DM = DM_uu, Sname =Tmp$SampleID)
+fit <- adonis2(Work_dm ~ Urban + Gender + Age_grp, data = Tmp %>% filter(SampleID %in% attr(Work_dm, "Labels")), by = "margin", permutation = 2000)
+print(fit)
+### Adults
+Work_dm <- subset_dm_by_names(DM = DM_uu, Sname =Tmp %>% filter(Age_grp=="Adults") %>% .$SampleID)
+fit <- adonis2(Work_dm ~ Urban + Gender, data = Tmp %>% filter(Age_grp=="Adults") %>% filter(SampleID %in% attr(Work_dm, "Labels")), by = "margin", permutation = 2000)
+print(fit)
+### Children
+Work_dm <- subset_dm_by_names(DM = DM_uu, Sname =Tmp %>% filter(Age_grp=="Children") %>% .$SampleID)
+fit <- adonis2(Work_dm ~ Urban + Gender, data = Tmp %>% filter(Age_grp=="Children") %>% filter(SampleID %in% attr(Work_dm, "Labels")), by = "margin", permutation = 2000)
+print(fit)
+```
+```{r}
+#b 2016
+Work_dm <- subset_dm_by_names(DM = DM_uu, Sname = Work_Map_16$SampleID)
+Work_pcoa <- pcoa(Work_dm)
+varPC1 <- round(Work_pcoa$values$Relative_eig[1]*100, 2)
+varPC2 <- round(Work_pcoa$values$Relative_eig[2]*100, 2)
+varPC3 <- round(Work_pcoa$values$Relative_eig[3]*100, 2)
+
+VL <- Work_pcoa$vectors[, 1:3] %>% merge(., Work_Map_16 %>% filter(SampleGroup=="Villagers"), by.x = 0, by.y = 1, all = F)
+VR <- Work_pcoa$vectors[, 1:3] %>% merge(., Work_Map_16 %>% filter(SampleGroup=="Visitors"), by.x = 0, by.y = 1)
+
+ggplot(data = VL, aes(x = Axis.1, y = Axis.2, color = Urban)) +
+    geom_point(size = 1.5) +
+    geom_point(size = 1.5, data = VR, aes(x = Axis.1, y = Axis.2), fill = "#EE82EE", color = "black", shape = 22) +
+    stat_ellipse() +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    scale_x_continuous(limits = c(-0.45, 0.4), breaks = seq(-0.4, 0.4, 0.20)) +
+    scale_y_continuous(limits = c(-0.45, 0.4), breaks = seq(-0.4, 0.4, 0.20)) +
+    facet_grid(~Age_grp) + theme_Publication() + theme(aspect.ratio = 1, panel.background = element_rect(colour = "black"), panel.grid.major = element_line(colour="grey90",linetype="dashed", size=0.2), legend.direction = "vertical") +
+    labs(x=paste0("PC1: ", varPC1, "% explained variation"), y=paste0("PC2: ", varPC2, "% explained variation"), color = "Urban level", title = paste0("PCoA on villagers and visitors in 2016, Unweighted Unifrac"), subtitle = "Rarefied at 10,000 reads per sample")
+set_panel_size(file = "output/figures/fig5b_unweightedunifrac_16.pdf", width = unit(2, "in"), height = unit(2, "in"), panel.size = T, useDingbats = F)
+
+ggplot(data = VL, aes(x = Age_grp, y = Axis.1, color = Urban)) +
+    geom_boxplot() + # Hide outlier point because geom_point will cover the outlier
+    scale_y_continuous(limits = c(-0.45, 0.4), breaks = seq(-0.4, 0.4, 0.20)) +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    stat_compare_means(method = "kruskal.test", label.y = 0.25, size = 2) +
+    coord_flip() +
+    theme_Publication() + theme(aspect.ratio = 0.3) +
+    labs(y = "PC1", x = "")
+set_panel_size(file = "output/figures/fig5b_unweightedunifrac_PC1_16.pdf", width = unit(2, "in"), height = unit(0.6, "in"), panel.size = T, useDingbats = F)
+
+ggplot(data = VL, aes(x = Age_grp, y = Axis.2, color = Urban)) +
+    geom_boxplot() + # Hide outlier point because geom_point will cover the outlier
+    stat_compare_means(method = "kruskal.test", label.y = 0.25, size = 2) +
+    scale_y_continuous(limits = c(-0.45, 0.4), breaks = seq(-0.4, 0.4, 0.20)) +
+    coord_flip() +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    theme_Publication() + theme(aspect.ratio = 0.3) +
+    labs(y = "PC2", x = "")
+set_panel_size(file = "output/figures/fig5b_unweightedunifrac_PC2_16.pdf", width = unit(2, "in"), height = unit(0.6, "in"), panel.size = T, useDingbats = F)
+
+## Stats
+Tmp <- Work_Map_16 %>% filter(SampleGroup=="Villagers")
+Work_dm <- subset_dm_by_names(DM = DM_uu, Sname =Tmp$SampleID)
+fit <- adonis2(Work_dm ~ Urban + Gender + Age_grp, data = Tmp %>% filter(SampleID %in% attr(Work_dm, "Labels")), by = "margin", permutation = 2000)
+print(fit)
+### Adults
+Work_dm <- subset_dm_by_names(DM = DM_uu, Sname =Tmp %>% filter(Age_grp=="Adults") %>% .$SampleID)
+fit <- adonis2(Work_dm ~ Urban + Gender, data = Tmp %>% filter(Age_grp=="Adults") %>% filter(SampleID %in% attr(Work_dm, "Labels")), by = "margin", permutation = 2000)
+print(fit)
+### Children
+Work_dm <- subset_dm_by_names(DM = DM_uu, Sname =Tmp %>% filter(Age_grp=="Children") %>% .$SampleID)
+fit <- adonis2(Work_dm ~ Urban + Gender, data = Tmp %>% filter(Age_grp=="Children") %>% filter(SampleID %in% attr(Work_dm, "Labels")), by = "margin", permutation = 2000)
+print(fit)
+```

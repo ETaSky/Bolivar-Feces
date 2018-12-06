@@ -1,13 +1,15 @@
 ---
 title: "Alpha diversity analysis for the manuscript"
+author: "Jincheng Wang"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  html_notebook:
-    number_sections: yes
+  html_document:
     df_print: paged
+  html_notebook:
+    df_print: paged
+    number_sections: yes
 editor_options:
   chunk_output_type: console
-date: "`r format(Sys.time(), '%d %B, %Y')`"
-author: Jincheng Wang
 ---
 
 ```{r setup, message=FALSE, warning=FALSE}
@@ -18,6 +20,7 @@ library(extrafont)
 library(car)
 library(emmeans)
 library(segmented)
+library(ggpubr)
 
 LIBDIR="~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/lib/"
 WORKDIR = "~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/"
@@ -25,6 +28,17 @@ setwd(WORKDIR)
 source(paste0(LIBDIR, "utils.R"))
 ```
 
+**Color index**
+```{r}
+# Urban level
+Urban_color <- gg_color_hue(4)
+names(Urban_color) <- c("Very_low", "Low", "Medium", "High")
+# Ethnicity
+Ethnicity_color <- gg_color_hue(3)
+names(Ethnicity_color) <- c("SANEMA", "YEKWANA", "Visitors")
+```
+
+# Alpha diversity
 ## Import the data
 ```{r, eval=FALSE}
 # These procedure has already been completed previously.
@@ -36,15 +50,268 @@ alpha_import <- lapply(path2, FUN = function(x){read.table(x, header = T, sep = 
 alpha <- merge_iter(alpha_import, by = 0)
 
 ## Mapping files
-# grep("Mapping", list.files("data/"), fixed = T, value = T)
-Mapping_import <- lapply(paste0("data/", grep("Mapping", list.files("data/"), fixed = T, value = T)), FUN = function(x){read.delim(x, stringsAsFactors = F)})
-names(Mapping_import) <- c("VL", "VR15", "VR16")
-Mapping_common_header <- Reduce(intersect, lapply(Mapping_import, FUN = function(x){colnames(x)}))
-Mapping_final <- do.call("rbind", lapply(Mapping_import, function(x){x[Mapping_common_header]}))
+load(file = "output/Mapping_MS_feces.Rdata")
 
 ## Final alpha diversity object
-alpha_human <- merge(alpha, Mapping_final, by = 1)
-save(alpha_human, file = "output/alpha_imported_human-20181108.Rdata")
+alpha_human <- merge(alpha, Mapping_MS_feces, by = 1)
+save(alpha_human, file = "output/alpha_imported_feces-20181108.Rdata")
+```
+```{r}
+load("output/alpha_imported_feces-20181108.Rdata")
+Work <- alpha_human %>% mutate(Urban = ifelse(Ethnicity=="SANEMA", "Very_low", ifelse(Village=="Fiyakwanha", "Low", ifelse(SampleGroup=="Visitors", "High", "Medium"))) %>% factor(levels = c("Very_low", "Low", "Medium", "High")), Age_num = as.numeric(Age), Age_grp=ifelse(Age_num>=18, "Adults", "Children"))
+
+# Sample size
+Work %>% group_by(Year, SampleGroup, Urban, Ethnicity, Village, Age_grp) %>% summarise(N = n()) %>% ungroup() %>% spread(key = Age_grp, value = N)
+
+Work_15 <- Work %>% filter(Year=="2015")
+Work_16 <- Work %>% filter(Year=="2016")
+```
+
+
+## Fig 1 Median fecal microbiota alpha diversity by urban level
+### Faith's PD
+```{r}
+######################
+Index = "faith_pd"
+######################
+```
+```{r}
+# 1a
+## Generate the sample size for each urban level and provide a position (the Y column)
+NN <- Work_15 %>% group_by(Age_grp, Urban) %>% summarise(N = n()) %>% ungroup() %>% mutate(NN = paste0("N=", N)) %>% ungroup() %>% mutate(Y = min(Work[Index])/2)
+
+ggplot(Work_15, aes(x = Urban, y = get(Index))) +
+    geom_boxplot(outlier.size = 0) +
+    geom_point(size = 1, aes(color = Ethnicity), position = position_jitter(width = 0.1)) +
+    geom_text(data = NN, aes(y = Y, label = NN), angle = 90, size = 2.46, hjust = 0) +
+    stat_compare_means(comparisons = list(c("Very_low", "Medium")), label = "p.format", size = 2.8) +
+    facet_grid(~Age_grp) + 
+    scale_color_manual(breaks = names(Ethnicity_color), values = Ethnicity_color) +
+    theme_Publication() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), legend.direction = "vertical") +
+    labs(x = "Urban levels", y = Index, color = "Ethnicity", title = paste(Index, "2015", sep = ", "), subtitle = "Rarefied at 10,000 reads per sample")
+set_panel_size(file = "output/figures/fig1a_faith_pd_15.pdf", width = unit(1.6, "in"), height = unit(3.2, "in"), panel.size = T, useDingbats = F)
+
+# 1b
+## Generate the sample size for each urban level and provide a position (the Y column)
+NN <- Work_16 %>% group_by(Age_grp, Urban) %>% summarise(N = n()) %>% ungroup() %>% mutate(NN = paste0("N=", N)) %>% ungroup() %>% mutate(Y = min(Work[Index])/2)
+
+ggplot(Work_16, aes(x = Urban, y = get(Index))) +
+    geom_boxplot(outlier.size = 0) +
+    geom_point(size = 1, aes(color = Ethnicity), position = position_jitter(width = 0.1)) +
+    geom_text(data = NN, aes(y = Y, label = NN), angle = 90, size = 2.46, hjust = 0) +
+    stat_compare_means(comparisons = list(c("Very_low", "Low"), c("Very_low", "Medium"), c("Low", "Medium")), label.y = c(43, 45, 47), label = "p.format", size = 2.8, p.adjust.methods = "none") +
+    facet_grid(~Age_grp) + 
+    scale_color_manual(breaks = names(Ethnicity_color), values = Ethnicity_color) +
+    theme_Publication() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), legend.direction = "vertical") +
+    labs(x = "Urban levels", y = Index, color = "Ethnicity", title = paste(Index, "2016", sep = ", "), subtitle = "Rarefied at 10,000 reads per sample")
+set_panel_size(file = "output/figures/fig1b_faith_pd_16.pdf", width = unit(1.6, "in"), height = unit(3.2, "in"), panel.size = T, useDingbats = F)
+```
+
+### Other alpha index
+```{r}
+for (Index in c("shannon", "pielou_e", "observed_otus")){
+    ## Generate the sample size for each urban level and provide a position (the Y column)
+    NN <- Work_15 %>% group_by(Age_grp, Urban) %>% summarise(N = n()) %>% ungroup() %>% mutate(NN = paste0("N=", N)) %>% ungroup() %>% mutate(Y = min(Work[Index])/2)
+    ggplot(Work_15, aes(x = Urban, y = get(Index))) +
+        geom_boxplot(outlier.size = 0) +
+        geom_point(size = 1, aes(color = Ethnicity), position = position_jitter(width = 0.1)) +
+        geom_text(data = NN, aes(y = Y, label = NN), angle = 90, size = 2.46, hjust = 0) +
+        stat_compare_means(comparisons = list(c("Very_low", "Medium")), label = "p.format", size = 2.8) +
+        facet_grid(~Age_grp) + 
+        scale_color_manual(breaks = names(Ethnicity_color), values = Ethnicity_color) +
+        theme_Publication() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), legend.direction = "vertical") +
+        labs(x = "Urban levels", y = Index, color = "Ethnicity", title = paste(Index, "2015", sep = ", "), subtitle = "Rarefied at 10,000 reads per sample")
+    print(last_plot())
+    set_panel_size(file = paste0("output/figures/additional/fig1a_", Index, "_15.pdf"), width = unit(1.6, "in"), height = unit(3.2, "in"), panel.size = T, useDingbats = F)
+    
+    ## Generate the sample size for each urban level and provide a position (the Y column)
+    NN <- Work_16 %>% group_by(Age_grp, Urban) %>% summarise(N = n()) %>% ungroup() %>% mutate(NN = paste0("N=", N)) %>% ungroup() %>% mutate(Y = min(Work[Index])/2)
+    ggplot(Work_16, aes(x = Urban, y = get(Index))) +
+        geom_boxplot(outlier.size = 0) +
+        geom_point(size = 1, aes(color = Ethnicity), position = position_jitter(width = 0.1)) +
+        geom_text(data = NN, aes(y = Y, label = NN), angle = 90, size = 2.46, hjust = 0) +
+        stat_compare_means(comparisons = list(c("Very_low", "Low"), c("Very_low", "Medium"), c("Low", "Medium")), label = "p.format", size = 2.8, p.adjust.methods = "none") +
+        facet_grid(~Age_grp) + 
+        scale_color_manual(breaks = names(Ethnicity_color), values = Ethnicity_color) +
+        theme_Publication() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), legend.direction = "vertical") +
+        labs(x = "Urban levels", y = Index, color = "Ethnicity", title = paste(Index, "2016", sep = ", "), subtitle = "Rarefied at 10,000 reads per sample")
+    print(last_plot())
+    set_panel_size(file = paste0("output/figures/additional/fig1b_", Index, "_16.pdf"), width = unit(1.6, "in"), height = unit(3.2, "in"), panel.size = T, useDingbats = F)
+}
+```
+
+## Fig 2 Median fecal microbiota alpha diversity by village in SANEMA.
+```{r}
+for(Index in c("faith_pd","pielou_e","shannon","observed_otus")){
+    tmp_lvl <- levels(Work_15 %>% filter(Ethnicity=="SANEMA") %>% .$Village %>% factor)
+    my_compare <- combn(tmp_lvl, 2) %>% t() %>% split(seq(nrow(.)))
+    # Sample size
+    NN <- Work_15 %>% filter(Ethnicity=="SANEMA") %>% group_by(Age_grp, Village) %>% summarise(N = n()) %>% ungroup() %>% mutate(NN = paste0("N=", N)) %>% ungroup() %>% mutate(Y = min(Work[Index])/2)
+    ggplot(Work_15 %>% filter(Ethnicity=="SANEMA"), aes(x = Village, y = get(Index))) +
+        geom_boxplot(outlier.size = 0) +
+        geom_point(size = 1, position = position_jitter(width = 0.1)) +
+        geom_text(data = NN, aes(y = Y, label = NN), angle = 90, size = 2.46, hjust = 0) +
+        stat_compare_means(method = "anova") +
+        stat_compare_means(comparisons = my_compare, label = "p.format", size = 2.8, p.adjust.methods = "fdr") + 
+        facet_grid(~Age_grp) + 
+        theme_Publication() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+        labs(x = "Sanema Villages", y = Index, title = paste(Index, "2015", sep = ", "), subtitle = "Rarefied at 10,000 reads per sample \nPairwise t-test with FDR correction performed") 
+    print(last_plot())
+    set_panel_size(file = paste0("output/figures/additional/fig2a_", Index, "_15.pdf"), width = unit(1.6, "in"), height = unit(4, "in"), panel.size = T, useDingbats = F)
+    
+    tmp_lvl <- levels(Work_16 %>% filter(Ethnicity=="SANEMA") %>% .$Village %>% factor)
+    my_compare <- combn(tmp_lvl, 2) %>% t() %>% split(seq(nrow(.)))
+    # Sample size
+    NN <- Work_16 %>% filter(Ethnicity=="SANEMA") %>% group_by(Age_grp, Village) %>% summarise(N = n()) %>% ungroup() %>% mutate(NN = paste0("N=", N)) %>% ungroup() %>% mutate(Y = min(Work[Index])/2)
+    ggplot(Work_16 %>% filter(Ethnicity=="SANEMA"), aes(x = Village, y = get(Index))) +
+        geom_boxplot(outlier.size = 0) +
+        geom_point(size = 1, position = position_jitter(width = 0.1)) +
+        geom_text(data = NN, aes(y = Y, label = NN), angle = 90, size = 2.46, hjust = 0) +
+        stat_compare_means(method = "anova") +
+        stat_compare_means(comparisons = my_compare, label = "p.format", size = 2.8, p.adjust.methods = "fdr") + 
+        facet_grid(~Age_grp) + 
+        theme_Publication() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+        labs(x = "Sanema Villages", y = Index, title = paste(Index, "2016", sep = ", "), subtitle = "Rarefied at 10,000 reads per sample \nPairwise t-test with FDR correction performed") 
+    print(last_plot())
+    set_panel_size(file = paste0("output/figures/additional/fig2b_", Index, "_16.pdf"), width = unit(1.6, "in"), height = unit(4, "in"), panel.size = T, useDingbats = F)
+}
+```
+
+## Fig 3 Broken stick regression of individual alpha diversity values by urban levels, age and gender
+```{r}
+# 3a 2015
+tmp <- Work_15 %>% filter(SampleGroup=="Villagers")
+## simple regression w/ full interactions
+fit.lm1 <- lm(faith_pd ~ Age_num + Gender + Urban + Age_num : Gender + Age_num : Urban, data = tmp)
+summary(fit.lm1)  # Interaction term is not significant.
+
+## simple regression w/o interactions
+fit.lm2 <- lm(faith_pd ~ Age_num + Gender + Urban, data = tmp)
+summary(fit.lm2)
+
+## segmented regression
+fit.seg <- segmented(fit.lm2, seg.Z = ~ Age_num, psi = 18)
+summary(fit.seg)  # The estimated break point is 8 with SE 1.690
+slope(fit.seg)  # No significant trend after break point
+confint(fit.seg) # Confidence interval of breakpoint is 4.579, 11.258
+
+# Another way of build the broken stick model if the break point has been estimated
+tmp2 <- tmp %>% mutate(YB = pmin(Age_num, 8), YA = pmax(Age_num - 8, 0))
+fit.broken <- lm(faith_pd ~ YB + Gender + Urban + YA, data = tmp2)
+summary(fit.broken)
+
+### residual plots
+plot(fitted(fit.seg), residuals(fit.seg))
+
+### plot
+tmp$faith_pd_fit <- fitted(fit.seg)
+ggplot(tmp, aes(x = Age_num, y = faith_pd, color = Urban, shape = Gender)) +
+    geom_rect(aes(xmin = 4.579, xmax = 11.258, ymin = -Inf, ymax = Inf), fill = "grey", color = "grey", alpha = 0.1) +
+    geom_vline(xintercept = 8, linetype = "dashed") + # break point
+    geom_point(size = 1.5) +
+    geom_line(aes(y = faith_pd_fit, linetype = Gender)) +
+    theme_Publication() + theme(aspect.ratio = 0.8, legend.box = "vertical", legend.direction = "vertical", legend.key.size = unit(0.5, "in")) +
+    scale_shape_manual(values = c(16, 21)) +
+    scale_linetype_manual(values = c("solid", "dashed")) +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    labs(x = "Age (Years)", title = "Broken stick staticial analysis on faith_pd, 2015")
+set_panel_size(file = paste0("output/figures/fig3a_faith_pd_BrokenStick_15.pdf"), width = unit(3.5, "in"), height = unit(2.8, "in"), panel.size = T, useDingbats = F)
+
+# 3b 2016
+tmp <- Work_16 %>% filter(SampleGroup=="Villagers")
+## simple regression w/ full interactions
+fit.lm1 <- lm(faith_pd ~ Age_num + Gender + Urban + Age_num : Gender + Age_num : Urban, data = tmp)
+summary(fit.lm1)  # Interaction term is not significant.
+
+## simple regression w/o interactions
+fit.lm2 <- lm(faith_pd ~ Age_num + Gender + Urban, data = tmp)
+summary(fit.lm2)
+#anova(fit.lm1, fit.lm2)
+
+## segmented regression
+fit.seg <- segmented(fit.lm2, seg.Z = ~ Age_num, psi = 18)
+summary(fit.seg)  # The estimated break point is 26.0784 with SE 5.238
+slope(fit.seg)  # No significant trend of break point
+confint(fit.seg) # Confidence interval of breakpoint is 15.738, 36.419
+
+## Another way of build the broken stick model if the break point has been estimated
+##  necessary for emmeans
+tmp2 <- tmp %>% mutate(YB = pmin(Age_num, 26), YA = pmax(Age_num - 26, 0))
+fit.broken <- lm(faith_pd ~ YB + Gender + Urban + YA, data = tmp2)
+summary(fit.broken)
+
+### residual plots
+plot(fitted(fit.seg), residuals(fit.seg))
+
+### post-hoc test
+emmeans(fit.broken, "Urban") %>% pairs()
+
+### plot
+tmp$faith_pd_fit <- fitted(fit.seg)
+ggplot(tmp, aes(x = Age_num, y = faith_pd, color = Urban, shape = Gender)) +
+    geom_rect(aes(xmin = 15.738, xmax = 36.419, ymin = -Inf, ymax = Inf), fill = "grey", color = "grey", alpha = 0.1) +
+    geom_vline(xintercept = 26, linetype = "dashed") + # break point
+    geom_point(size = 1.5) +
+    geom_line(aes(y = faith_pd_fit, linetype = Gender)) +
+    theme_Publication() + theme(aspect.ratio = 0.8, legend.box = "vertical", legend.direction = "vertical", legend.key.size = unit(0.5, "in")) +
+    scale_shape_manual(values = c(16, 21)) +
+    scale_linetype_manual(values = c("solid", "dashed")) +
+    scale_color_manual(breaks = names(Urban_color), values = Urban_color) +
+    labs(x = "Age (Years)", title = "Broken stick staticial analysis on faith_pd, 2016")
+set_panel_size(file = paste0("output/figures/fig3b_faith_pd_BrokenStick_16.pdf"), width = unit(3.5, "in"), height = unit(2.8, "in"), panel.size = T, useDingbats = F)
+```
+
+### check if broken point change with urban level
+```{r}
+######################
+Index = "faith_pd"
+######################
+```
+```{r}
+# 2015
+tmp <- Work_15 %>% filter(SampleGroup=="Villagers")
+
+tmp1 <- tmp %>% filter(Urban=="Very_low")
+tmp2 <- tmp %>% filter(Urban=="Medium")
+
+## segmented regression
+fit.lm1 <- lm(faith_pd ~ Age_num + Gender, data = tmp1)
+summary(fit.lm1)
+fit.seg1 <- segmented(fit.lm1, seg.Z = ~ Age_num, psi = 18)
+summary(fit.seg1)  # The estimated break point is 8.6 with SE 1.8
+confint(fit.seg1) # Confidence interval of breakpoint is 5.1, 12.2
+
+fit.lm2 <- lm(faith_pd ~ Age_num + Gender, data = tmp2)
+summary(fit.lm2)
+fit.seg2 <- segmented(fit.lm2, seg.Z = ~ Age_num, psi = 18)
+summary(fit.seg2)  # The estimated break point is 4.9 with SE 1.9
+confint(fit.seg2) # Confidence interval of breakpoint is 1.0, 8.8
+
+# 2016
+tmp <- Work_16 %>% filter(SampleGroup=="Villagers")
+
+tmp1 <- tmp %>% filter(Urban=="Very_low")
+tmp2 <- tmp %>% filter(Urban=="Low")
+tmp3 <- tmp %>% filter(Urban=="Medium")
+
+## segmented regression
+fit.lm1 <- lm(faith_pd ~ Age_num + Gender, data = tmp1)
+summary(fit.lm1)
+fit.seg1 <- segmented(fit.lm1, seg.Z = ~ Age_num, psi = 18)
+summary(fit.seg1)  # The estimated break point is 27.0 with SE 11.5
+confint(fit.seg1) # Confidence interval of breakpoint is 4.0, 50.0
+
+fit.lm2 <- lm(faith_pd ~ Age_num + Gender, data = tmp2)
+summary(fit.lm2)
+fit.seg2 <- segmented(fit.lm2, seg.Z = ~ Age_num, psi = 18)
+summary(fit.seg2)  # The estimated break point is 6.2 with SE 1.1
+confint(fit.seg2) # Confidence interval of breakpoint is 4.0, 8.3
+
+fit.lm3 <- lm(faith_pd ~ Age_num + Gender, data = tmp3)
+summary(fit.lm3)
+fit.seg3 <- segmented(fit.lm3, seg.Z = ~ Age_num, psi = 18)
+summary(fit.seg3)  # The estimated break point is 39.0 with SE 7.7
+confint(fit.seg3) # Confidence interval of breakpoint is 23.5, 54.5
 ```
 
 

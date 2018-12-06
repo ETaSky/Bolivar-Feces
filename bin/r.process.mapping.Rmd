@@ -15,7 +15,7 @@ setwd(WORKDIR)
 ```
 
 # Import mapping files
-```{r, eval=FALSE}
+```{r}
 #grep("Mapping", list.files("data/"), fixed = T, value = T)
 Mapping_import <- lapply(paste0("data/", grep("Mapping", list.files("data/"), fixed = T, value = T)), FUN = function(x){read.delim(x, stringsAsFactors = F)})
 names(Mapping_import) <- c("VL", "VR15", "VR16")
@@ -31,9 +31,17 @@ Work <- Mapping_import
 Work_VR15_BL <- Work$VR15 %>% group_by(Body_Site, Subject_ID) %>% filter(Days_of_study==min(Days_of_study)) %>% ungroup()
 Work_VR16_BL <- Work$VR16 %>% group_by(Body_Site, Subject_ID) %>% filter(Days_of_study==min(Days_of_study)) %>% ungroup()
 
+# House keeping
+Work_VR15_BL$Ethnicity <- "Visitors"
+Work_VR16_BL$Ethnicity <- "Visitors"
+Work_VR15_BL$Village <- "Visitors"
+Work_VR16_BL$Village <- "Visitors"
+
 Mapping_common_header <- Reduce(intersect, list(colnames(Mapping_import$VL), colnames(Work_VR15_BL), colnames(Work_VR16_BL)))
-Mapping_MS <- do.call("rbind", lapply(list(Mapping_import$VL, Work_VR15_BL, Work_VR16_BL), FUN = function(x){x[Mapping_common_header]})) %>% filter(Body_Site=="Feces")
-save(Mapping_MS, file = "output/Mapping_MS_feces.Rdata")
+Mapping_MS_feces <- do.call("rbind", lapply(list(Mapping_import$VL, Work_VR15_BL, Work_VR16_BL), FUN = function(x){x[Mapping_common_header]})) %>% filter(Body_Site=="Feces", Village != "Kadansakaduinha", !is.na(Age), !is.na(as.numeric(Age)))
+Mapping_MS_feces$Ethnicity[which(Mapping_MS_feces$Ethnicity=="Yekwana")] <- "YEKWANA"
+
+save(Mapping_MS_feces, file = "output/Mapping_MS_feces.Rdata")
 ```
 
 
