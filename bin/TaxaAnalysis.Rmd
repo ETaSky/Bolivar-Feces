@@ -1,0 +1,625 @@
+---
+title: "MaAsLin analysis for the manuscript"
+author: "Jincheng Wang"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+  html_notebook:
+    df_print: paged
+    number_sections: yes
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
+# Loading library here
+library(tidyverse)
+library(extrafont)
+library(biomformat)
+library(Maaslin2)
+library(MASS)
+library(conflicted)
+conflict_prefer("filter", "dplyr")
+
+LIBDIR="~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/lib/"
+WORKDIR = "~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/"
+setwd(WORKDIR)
+source(paste0(LIBDIR, "utils.R"))
+```
+
+## Import data
+```{r}
+# Mapping file
+load(file = "output/Mapping_MS_feces.Rdata")
+Work_Map <- Mapping_MS_feces %>% mutate(Urban = ifelse(Ethnicity=="SANEMA", "Very_low", ifelse(Village=="Fiyakwanha", "Low", ifelse(SampleGroup=="Visitors", "High", "Medium"))) %>% factor(levels = c("Very_low", "Low", "Medium", "High")), Age_num = as.numeric(Age), Age_grp=ifelse(Age_num>=18, "Adults", "Children"))
+Work_Map_15 <- Work_Map %>% filter(Year==2015)
+Work_Map_16 <- Work_Map %>% filter(Year==2016)
+```
+```{r, eval = FALSE}
+# Biom table
+dat <- read_hdf5_biom("data/qiime-rarefied_table/bddf0151-4eac-4835-9213-2867f2c70c74/data/feature-table.biom")
+biom <- biom(dat) %>% biom_data() %>% as.matrix() %>% as.data.frame()
+## select only those appeared in the mapping files, and filter "OTU" that has 0 in all selected samples
+Work_biom <- biom %>% rownames_to_column(var = "OTU_ID") %>% dplyr::select(OTU_ID, one_of(c(Work_Map_15$SampleID, Work_Map_16$SampleID))) %>% filter(rowSums(.[,-1])!=0)
+
+# Taxa table
+taxa <- read.delim("data/qiime-taxa-silva132/data/taxonomy.tsv", stringsAsFactors = F) %>%  mutate(Taxon =  gsub(pattern = "__", replacement = "_", Taxon)) %>% separate(Taxon, into = c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species"), sep = ";")
+taxa$Domain[is.na(taxa$Domain)] <- "D_0_"
+taxa$Phylum[is.na(taxa$Phylum)] <- "D_1_"
+taxa$Class[is.na(taxa$Class)] <- "D_2_"
+taxa$Order[is.na(taxa$Order)] <- "D_3_"
+taxa$Family[is.na(taxa$Family)] <- "D_4_"
+taxa$Genus[is.na(taxa$Genus)] <- "D_5_"
+taxa$Species[is.na(taxa$Species)] <- "D_6_"
+Work_taxa <- taxa %>% filter(Feature.ID %in% Work_biom$OTU_ID)
+
+# Biom table with taxa
+Tmp <- merge(Work_taxa[, -9], Work_biom, by = 1)
+
+# Create a table with summation at levels from Domain to Genus
+FeatureTbl_glom <- list()
+FeatureTbl_glom[["Genus"]] <- Tmp %>% group_by_at(vars(c(2:7))) %>% summarise_at(vars(-c(1:8)), sum) %>% ungroup() %>% unite("Taxa", Domain:Genus, sep = "|", remove = F)
+Taxa <- c("Genus", "Family", "Order", "Class", "Phylum", "Domain")
+for (i in seq(2, length(Taxa), 1)){
+    FeatureTbl_glom[[Taxa[i]]] <- FeatureTbl_glom[[Taxa[i-1]]][,-1] %>% group_by_at(vars(c("Domain":Taxa[i]))) %>% filter(!length(get(Taxa[i-1]))==1) %>% group_by_at(vars(c("Domain":Taxa[i]))) %>% summarise_at(vars(-c("Domain":Taxa[i-1])), sum) %>% ungroup() %>% unite("Taxa", "Domain":Taxa[i], sep = "|", remove = F)
+}
+
+## Filter the agglomerated table
+FeatureTbl_glom2 <- do.call("rbind", lapply(FeatureTbl_glom, function(x){dplyr::select(x, Taxa, starts_with("X"))})) %>% 
+    filter(rowSums(.[, -1])!=0) %>% #remove those features have 0 count
+    filter(rowSums(.[, -1]!=0)>5) %>% # remove feature appeared in less than 5 samples.
+    filter(!grepl("unassigned", Taxa, fixed = T)) %>% # remove unassigned.
+    filter(!grepl(pattern = "D_1_\\|", Taxa), Taxa!="D_0_Bacteria|D_1_")
+save(FeatureTbl_glom2, file = "output/FeatureTbl_feces_glom.Rdata")
+```
+```{r}
+load("output/FeatureTbl_feces_glom.Rdata")
+FeatureTbl_maaslin <- FeatureTbl_glom2 %>% column_to_rownames(var = "Taxa")
+```
+### 2015
+```{r }
+Metadata <- Work_Map_15 %>% filter(SampleGroup=="Villagers")
+# 
+# fit <- Maaslin2(input_data = FeatureTbl_maaslin, input_metadata = Metadata %>% column_to_rownames(var = "SampleID"), output = "output/maaslin2_15/", fixed_effects = "Urban,Gender,Age_grp", cores = 4)
+# save(fit, file = "output/Maaslin_fit_2015.Rdata")
+```
+#################
+Urban
+#################
+```{r}
+fit_urban_res <- fit$results %>% filter(metadata == "Urban") %>% mutate(value = ifelse(qval>0.25, NA, value), qval = ifelse(qval>0.25, NA, qval))
+fit_urban_res_sig <- fit_urban_res$feature[!is.na(fit_urban_res$qval)]
+```
+**Abundance Figures of significant taxa**
+```{r}
+fit_urban_res_sig_fil <- taxa_filtered("Urban", fit_urban_res_sig, Metadata)
+
+taxa_filtered <- function(Var, Taxa_lst, Metadata){
+    # This function filter the feature table so that a feature is included only if there are at least half of the samples in one level of the primary variable have that feature.
+    MT <- Metadata
+    FT <- FeatureTbl_maaslin %>% rownames_to_column(var = "Taxa") %>% dplyr::select(Taxa, one_of(MT$SampleID)) %>% filter(Taxa %in% Taxa_lst)
+    FT_2 <- t(FT[,2:ncol(FT)])
+    colnames(FT_2) <- FT$Taxa
+    N_features <- length(Taxa_lst)
+    FTwMT <- merge(FT_2, MT, by.x = 0, by.y = 1, all.x = T) %>% column_to_rownames(var = "Row.names") %>% gather(key = "Taxa", value = "Count", c(1:N_features)) %>% dplyr::select(Taxa, Count, everything())
+    for (i in seq(N_features)){
+        Tmp_taxa <- Taxa_lst[i]
+        Tmp <- FTwMT %>% filter(Taxa==Tmp_taxa)
+        Tmp_sum2 <- Tmp %>% group_by(get(Var)) %>% summarise(N = n(), N.not0 = sum(Count!=0), P = N.not0/N)
+        if (sum(Tmp_sum2$P>=0.5)==0){
+            Taxa_lst[i] = NA
+        }
+    }
+    Taxa_lst_final <- Taxa_lst[!is.na(Taxa_lst)]
+    TT <- substr(Var, 1, 1)
+    return(data.frame(Index = paste0(TT, seq(length(Taxa_lst_final))), Taxa = Taxa_lst_final, stringsAsFactors = F))
+}
+```
+
+**LDA analysis**
+```{r}
+FT <- FeatureTbl_maaslin %>% rownames_to_column(var = "Taxa") %>% dplyr::select(Taxa, one_of(Metadata$SampleID)) %>% filter(Taxa %in% fit_urban_res_sig_fil$Taxa) 
+FT_2 <- t(FT[,2:ncol(FT)])
+colnames(FT_2) <- fit_urban_res_sig_fil$Index[match(FT$Taxa, fit_urban_res_sig_fil$Taxa)]
+
+FTwMT <- merge(FT_2, Metadata, by.x = 0, by.y = 1, all.x = T) %>% mutate(Urban_c = as.character(Urban)) %>% dplyr::select(Urban_c, c(2:(ncol(FT_2)+1)))
+
+# check colinearity
+corDF <- cor(FTwMT[, 2:ncol(FTwMT)], method = "spearman")
+dissimilarity <- 1 - abs(corDF)
+distance <- as.dist(dissimilarity)
+hc <- hclust(distance)
+plot(hc)
+clusterV = cutree(hc,h=0.2)  # the value h here is correspond to the correlation coefficient; 0.2 is used so that those species with more than 0.8  will be deemed as the same group
+
+# Modify the dataset so that only representative taxa of a cluster remain.
+## The representative taxa is the leaf taxa of the cluster
+for (i in seq(max(clusterV))){
+    MMs <- names(clusterV)[clusterV==i]
+    if (length(MMs)==1){
+        next
+    }
+    MM_tax <- fit_urban_res_sig_fil %>% filter(Index %in% MMs) %>% mutate(pathString = Taxa)
+    MM_tree <- as.Node(MM_tax, pathDelimiter = "|")
+    MM_leaves <- MM_tree$Get("Taxa", filterFun = isLeaf)  # this will return a vector of chr
+    MM_leavs_index <- fit_urban_res_sig_fil %>% filter(Taxa %in% MM_leaves) %>% pull(Index)
+    MM_leavs_exclude <- MMs[MMs!=MM_leavs_index]
+    FTwMT <- FTwMT %>% dplyr::select(-one_of(MM_leavs_exclude))
+}
+
+FTwMT_tran <- FTwMT %>% mutate_at(vars(-1), function(x){asin(sqrt(x/10000)) %>% scale})
+FTwMT_tran$Urban_c <- factor(FTwMT_tran$Urban_c)
+
+fit_lda <- LDA(Urban_c ~ ., data = FTwMT_tran, output = "Prediction-Accuracy Table")
+fit_lda
+
+fit_urban_res_sig_final <- fit_urban_res_sig_fil %>% filter(Index %in% colnames(FTwMT_tran)[-1]) %>% merge(., fit_lda$original$scaling, by.x = 1, by.y = 0)
+# Plot
+significant_taxa_boxplot("Urban", fit_urban_res_sig_final$Taxa, fit_urban_res_sig_final$Index, Metadata, c("Gender", "Age_grp"))
+
+significant_taxa_boxplot <- function(Var, Taxa_lst, Taxa_index, Metadata, Co_Var){
+    # at most 2 additional Co_Vars
+    MT <- Metadata
+    # select significantly changed taxa
+    FT <- FeatureTbl_maaslin %>% rownames_to_column(var = "Taxa") %>% dplyr::select(Taxa, one_of(MT$SampleID)) %>% filter(Taxa %in% Taxa_lst)
+    FT_2 <- t(FT[,2:ncol(FT)])
+    colnames(FT_2) <- FT$Taxa
+    N_features <- length(Taxa_lst)
+    # Complete dataframe
+    FTwMT <- merge(FT_2, MT, by.x = 0, by.y = 1, all.x = T) %>% column_to_rownames(var = "Row.names") %>% gather(key = "Taxa", value = "Count", c(1:N_features)) %>% dplyr::select(Taxa, Count, everything())
+    for (i in seq(N_features)){
+        Tmp_taxa <- Taxa_lst[i]
+        Tmp <- FTwMT %>% filter(Taxa==Tmp_taxa)
+        Tmp_sum <- Tmp  %>% group_by(get(Var), get(Co_Var[1]), get(Co_Var[2])) %>% summarise(N = n(), N.not0 = sum(Count!=0), Mean = mean(Count)) %>% mutate(Label = paste0("N=", N.not0, "/", N)) %>% ungroup()
+        Label_y = -(range(Tmp$Count)[2] - range(Tmp$Count)[1])/8
+        colnames(Tmp_sum)[1:3] <- c(Var, Co_Var)
+        ggplot(Tmp, aes(x = get(Var), y = Count, color = get(Co_Var[1]))) +
+            geom_boxplot() +
+            geom_point(data = Tmp_sum, aes(y = Mean), shape = 23, fill = "black", position = position_dodge(width = 0.75)) +
+            geom_text(data = Tmp_sum, aes(y = Label_y, label = Label, angle = 45), position = position_dodge(width = 0.75), size = 2.8) +
+            facet_grid(.~get(Co_Var[2])) +
+            theme_Publication() + theme(aspect.ratio = 1.5) +
+            labs(x = Var, y = "Count/10,000", color = Co_Var[1], title = str_wrap(paste0(Taxa_index[i], "-", Tmp_taxa), width = 40))
+        print(last_plot())
+        set_panel_size(file = paste0("output/figures/additional/Taxa_maaslin2_2015_", Var, "_",Taxa_index[i], ".pdf"), width = unit(2, "in"), height = unit(3, "in"), useDingbats = F)
+    }
+}
+```
+
+############
+Age
+############
+```{r}
+fit_age_res <- fit$results %>% filter(metadata == "Age_grp") %>% mutate(value = ifelse(qval>0.25, NA, value), qval = ifelse(qval>0.25, NA, qval))
+fit_age_res_sig <- fit_age_res$feature[!is.na(fit_age_res$qval)]
+```
+**Abundance Figures of significant taxa**
+```{r}
+fit_age_res_sig_fil <- taxa_filtered("Age_grp", fit_age_res_sig, Metadata)
+```
+
+**LDA analysis**
+```{r}
+FT <- FeatureTbl_maaslin %>% rownames_to_column(var = "Taxa") %>% dplyr::select(Taxa, one_of(Metadata$SampleID)) %>% filter(Taxa %in% fit_age_res_sig_fil$Taxa) 
+FT_2 <- t(FT[,2:ncol(FT)])
+colnames(FT_2) <- fit_age_res_sig_fil$Index[match(FT$Taxa, fit_age_res_sig_fil$Taxa)]
+
+FTwMT <- merge(FT_2, Metadata, by.x = 0, by.y = 1, all.x = T) %>% dplyr::select(Age_grp, c(2:(ncol(FT_2)+1)))
+
+# check colinearity
+corDF <- cor(FTwMT[, 2:ncol(FTwMT)], method = "spearman")
+dissimilarity <- 1 - abs(corDF)
+distance <- as.dist(dissimilarity)
+hc <- hclust(distance)
+plot(hc)
+clusterV = cutree(hc,h=0.2)  # the value h here is correspond to the correlation coefficient; 0.2 is used so that those species with more than 0.8  will be deemed as the same group
+
+# Modify the dataset so that only representative taxa of a cluster remain.
+## The representative taxa is the leaf taxa of the cluster
+for (i in seq(max(clusterV))){
+    MMs <- names(clusterV)[clusterV==i]
+    if (length(MMs)==1){
+        next
+    }
+    MM_tax <- fit_age_res_sig_fil %>% filter(Index %in% MMs) %>% mutate(pathString = Taxa)
+    MM_tree <- as.Node(MM_tax, pathDelimiter = "|")
+    MM_leaves <- MM_tree$Get("Taxa", filterFun = isLeaf)  # this will return a vector of chr
+    MM_leavs_index <- fit_age_res_sig_fil %>% filter(Taxa %in% MM_leaves) %>% pull(Index)
+    MM_leavs_exclude <- MMs[MMs!=MM_leavs_index]
+    FTwMT <- FTwMT %>% dplyr::select(-one_of(MM_leavs_exclude))
+}
+
+FTwMT_tran <- FTwMT %>% mutate_at(vars(-1), function(x){asin(sqrt(x/10000)) %>% scale})
+FTwMT_tran$Age_grp<- factor(FTwMT_tran$Age_grp)
+
+fit_lda <- LDA(Age_grp ~ ., data = FTwMT_tran, output = "Prediction-Accuracy Table")
+fit_lda
+
+fit_age_res_sig_final <- fit_age_res_sig_fil %>% filter(Index %in% colnames(FTwMT_tran)[-1]) %>% merge(., fit_lda$original$scaling, by.x = 1, by.y = 0)
+
+significant_taxa_boxplot("Age_grp", fit_age_res_sig_final$Taxa, fit_age_res_sig_final$Index, Metadata, c("Urban", "Gender"))
+```
+
+############
+Gender
+############
+```{r}
+fit_gender_res <- fit$results %>% filter(metadata == "Gender") %>% mutate(value = ifelse(qval>0.25, NA, value), qval = ifelse(qval>0.25, NA, qval))
+fit_gender_res_sig <- fit_gender_res$feature[!is.na(fit_gender_res$qval)]
+```
+**Abundance Figures of significant taxa**
+```{r}
+fit_gender_res_sig_fil <- taxa_filtered("Gender", fit_gender_res_sig, Metadata)
+```
+
+**LDA analysis**
+```{r}
+FT <- FeatureTbl_maaslin %>% rownames_to_column(var = "Taxa") %>% dplyr::select(Taxa, one_of(Metadata$SampleID)) %>% filter(Taxa %in% fit_gender_res_sig_fil$Taxa) 
+FT_2 <- t(FT[,2:ncol(FT)])
+colnames(FT_2) <- fit_gender_res_sig_fil$Index[match(FT$Taxa, fit_gender_res_sig_fil$Taxa)]
+
+FTwMT <- merge(FT_2, Metadata, by.x = 0, by.y = 1, all.x = T) %>% dplyr::select(Gender, c(2:(ncol(FT_2)+1)))
+
+# check colinearity
+corDF <- cor(FTwMT[, 2:ncol(FTwMT)], method = "spearman")
+dissimilarity <- 1 - abs(corDF)
+distance <- as.dist(dissimilarity)
+hc <- hclust(distance)
+plot(hc)
+clusterV = cutree(hc,h=0.2)  # the value h here is correspond to the correlation coefficient; 0.2 is used so that those species with more than 0.8  will be deemed as the same group
+
+# Modify the dataset so that only representative taxa of a cluster remain.
+## The representative taxa is the leaf taxa of the cluster
+for (i in seq(max(clusterV))){
+    MMs <- names(clusterV)[clusterV==i]
+    if (length(MMs)==1){
+        next
+    }
+    MM_tax <- fit_gender_res_sig_fil %>% filter(Index %in% MMs) %>% mutate(pathString = Taxa)
+    MM_tree <- as.Node(MM_tax, pathDelimiter = "|")
+    MM_leaves <- MM_tree$Get("Taxa", filterFun = isLeaf)  # this will return a vector of chr
+    MM_leavs_index <- fit_gender_res_sig_fil %>% filter(Taxa %in% MM_leaves) %>% pull(Index)
+    MM_leavs_exclude <- MMs[MMs!=MM_leavs_index]
+    FTwMT <- FTwMT %>% dplyr::select(-one_of(MM_leavs_exclude))
+}
+
+FTwMT_tran <- FTwMT %>% mutate_at(vars(-1), function(x){asin(sqrt(x/10000)) %>% scale})
+FTwMT_tran$Gender<- factor(FTwMT_tran$Gender)
+
+fit_lda <- LDA(Gender ~ ., data = FTwMT_tran, output = "Prediction-Accuracy Table")
+fit_lda
+
+fit_gender_res_sig_final <- fit_gender_res_sig_fil %>% filter(Index %in% colnames(FTwMT_tran)[-1]) %>% merge(., fit_lda$original$scaling, by.x = 1, by.y = 0)
+
+significant_taxa_boxplot("Gender", fit_gender_res_sig_final$Taxa, fit_gender_res_sig_final$Index, Metadata, c("Urban", "Age_grp"))
+```
+
+Tree
+```{r}
+# filter the fit results so that those feature which appeared in only 5 samples were removed
+Tree_tbl <- fit$results %>% filter(N.not.zero > 5) %>% 
+    mutate(feature2 = gsub("\\[|\\]", "", feature), feature2 = gsub("D_\\d_([^\\|])", "\\1", feature2), feature2 = gsub("D_(\\d)_", "D\\1", feature2), feature2 = gsub(" ", "_", feature2))
+
+Tree_tbls <- split(Tree_tbl, f = Tree_tbl$metadata)
+Tree_maps <- list()
+Tree_maps[["Age_grp"]] <- Tree_tbls$Age_grp %>% mutate(Sig_test = ifelse(feature %in% fit_age_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_age_res_sig_final, by.x = 1, by.y = 2, all = T)
+Tree_maps[["Urban"]] <- Tree_tbls$Urban %>% mutate(Sig_test = ifelse(feature %in% fit_urban_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_urban_res_sig_final, by.x = 1, by.y = 2, all = T)
+Tree_maps[["Gender"]] <- Tree_tbls$Gender %>% mutate(Sig_test = ifelse(feature %in% fit_gender_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_gender_res_sig_final, by.x = 1, by.y = 2, all = T)
+Tree_map <- do.call("rbind", Tree_maps) %>% group_by(Sig_test, feature) %>% mutate(Flag = ifelse(is.na(Sig_test), seq(n()), 0)) %>% filter(Flag <= 1) %>%
+    ungroup() %>% mutate(feature2 = ifelse(grepl(pattern = "D\\d", feature2), paste(feature2, seq(n()), sep = "-"), feature2), pathString = feature2) %>%
+    separate(feature2, into = c("Domain", "Phylum", "Class", "Order", "Family", "Genus"), sep = "\\|", remove = F) %>%
+    mutate(Node_label = ifelse(!is.na(Genus), Genus, ifelse(!is.na(Family), Family, ifelse(!is.na(Order), Order, ifelse(!is.na(Class), Class, ifelse(!is.na(Phylum), Phylum, Domain)))))) %>%
+    dplyr::select(Node_label, everything(), -c(feature2, Flag))
+
+Tree_map_filtered <- Tree_map %>% filter(!is.na(Sig_test)) %>% mutate(Sig_test2 = ifelse(is.na(Sig_test), "No", "Yes"))
+Tree_map_filtered$Node_label[12] <- "uncultured_bacterium-1"
+
+Tree_sig_matrix <- Tree_map_filtered %>% mutate(Contri = round(LD1 * sign(coef), 2)) %>% dplyr::select(Node_label, metadata, Contri) %>% spread(key = metadata, value = Contri) %>% column_to_rownames(var = "Node_label")
+
+Tree_fit <- as.Node(Tree_map_filtered, pathDelimiter = "|")
+Tree_fit_phylo <- Tree_fit %>% as.phylo.Node
+
+p <- ggtree(Tree_fit_phylo)
+p
+
+p1 <- p + geom_nodepoint(fill = "#00BFC4", shape = 21, size = 1.5) +
+    geom_tippoint(fill = "#F8766D", shape = 21, size = 2) + 
+    geom_tiplab(align = T, offset = 1, size = 2) +
+    geom_nodelab(size = 2, vjust = -0.3)
+
+gheatmap(p1, Tree_sig_matrix, offset=20, width=0.2, font.size=2, colnames_angle=-45, hjust=0, color = "black") +
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, na.value = "grey90")
+ggsave(file = "output/figures/fig_maaslin_2015.pdf", width = 7, unit = "in", useDingbats = F)
+```
+
+### 2016
+```{r }
+Metadata <- Work_Map_16 %>% filter(SampleGroup=="Villagers")
+Yr = 2016
+# 
+# fit <- Maaslin2(input_data = FeatureTbl_maaslin, input_metadata = Metadata %>% column_to_rownames(var = "SampleID"), output = "output/maaslin2_16/", fixed_effects = "Urban,Gender,Age_grp", cores = 4)
+# Metadata2 <- Metadata %>% mutate(Urban2 = ifelse(Urban=="Very_low", "B", ifelse(Urban=="Low", "A", "C")))
+# fit2 <- Maaslin2(input_data = FeatureTbl_maaslin, input_metadata = Metadata2 %>% column_to_rownames(var = "SampleID"), output = "tt/", fixed_effects = "Urban2,Gender,Age_grp", cores = 4)
+# save(fit, file = "output/Maaslin_fit_2016.Rdata")
+```
+#################
+Urban
+#################
+```{r}
+fit_urban_res <- fit$results %>% filter(metadata == "Urban") %>% mutate(value = ifelse(qval>0.25, NA, value), qval = ifelse(qval>0.25, NA, qval))
+fit_urban_res_sig <- fit_urban_res$feature[!is.na(fit_urban_res$qval)]
+```
+**Abundance Figures of significant taxa**
+```{r}
+fit_urban_res_sig_fil <- taxa_filtered("Urban", fit_urban_res_sig, Metadata)
+
+taxa_filtered <- function(Var, Taxa_lst, Metadata){
+    # This function filter the feature table so that a feature is included only if there are at least half of the samples in one level of the primary variable have that feature.
+    MT <- Metadata
+    FT <- FeatureTbl_maaslin %>% rownames_to_column(var = "Taxa") %>% dplyr::select(Taxa, one_of(MT$SampleID)) %>% filter(Taxa %in% Taxa_lst)
+    FT_2 <- t(FT[,2:ncol(FT)])
+    colnames(FT_2) <- FT$Taxa
+    N_features <- length(Taxa_lst)
+    FTwMT <- merge(FT_2, MT, by.x = 0, by.y = 1, all.x = T) %>% column_to_rownames(var = "Row.names") %>% gather(key = "Taxa", value = "Count", c(1:N_features)) %>% dplyr::select(Taxa, Count, everything())
+    for (i in seq(N_features)){
+        Tmp_taxa <- Taxa_lst[i]
+        Tmp <- FTwMT %>% filter(Taxa==Tmp_taxa)
+        Tmp_sum2 <- Tmp %>% group_by(get(Var)) %>% summarise(N = n(), N.not0 = sum(Count!=0), P = N.not0/N)
+        if (sum(Tmp_sum2$P>=0.5)==0){
+            Taxa_lst[i] = NA
+        }
+    }
+    Taxa_lst_final <- Taxa_lst[!is.na(Taxa_lst)]
+    TT <- substr(Var, 1, 1)
+    return(data.frame(Index = paste0(TT, seq(length(Taxa_lst_final))), Taxa = Taxa_lst_final, stringsAsFactors = F))
+}
+```
+
+**LDA analysis**
+```{r}
+FT <- FeatureTbl_maaslin %>% rownames_to_column(var = "Taxa") %>% dplyr::select(Taxa, one_of(Metadata$SampleID)) %>% filter(Taxa %in% fit_urban_res_sig_fil$Taxa) 
+FT_2 <- t(FT[,2:ncol(FT)])
+colnames(FT_2) <- fit_urban_res_sig_fil$Index[match(FT$Taxa, fit_urban_res_sig_fil$Taxa)]
+
+FTwMT <- merge(FT_2, Metadata, by.x = 0, by.y = 1, all.x = T) %>% mutate(Urban_c = as.character(Urban)) %>% dplyr::select(Urban_c, c(2:(ncol(FT_2)+1)))
+
+# check colinearity
+corDF <- cor(FTwMT[, 2:ncol(FTwMT)], method = "spearman")
+dissimilarity <- 1 - abs(corDF)
+distance <- as.dist(dissimilarity)
+hc <- hclust(distance)
+plot(hc)
+clusterV = cutree(hc,h=0.2)  # the value h here is correspond to the correlation coefficient; 0.2 is used so that those species with more than 0.8  will be deemed as the same group
+
+# Modify the dataset so that only representative taxa of a cluster remain.
+## The representative taxa is the leaf taxa of the cluster
+for (i in seq(max(clusterV))){
+    MMs <- names(clusterV)[clusterV==i]
+    if (length(MMs)==1){
+        next
+    }
+    MM_tax <- fit_urban_res_sig_fil %>% filter(Index %in% MMs) %>% mutate(pathString = Taxa)
+    MM_tree <- as.Node(MM_tax, pathDelimiter = "|")
+    MM_leaves <- MM_tree$Get("Taxa", filterFun = isLeaf)  # this will return a vector of chr
+    MM_leavs_index <- fit_urban_res_sig_fil %>% filter(Taxa %in% MM_leaves) %>% pull(Index)
+    MM_leavs_exclude <- MMs[MMs!=MM_leavs_index]
+    FTwMT <- FTwMT %>% dplyr::select(-one_of(MM_leavs_exclude))
+}
+
+FTwMT_tran <- FTwMT %>% mutate_at(vars(-1), function(x){asin(sqrt(x/10000)) %>% scale})
+FTwMT_tran$Urban_c <- factor(FTwMT_tran$Urban_c)
+
+fit_lda <- LDA(Urban_c ~ ., data = FTwMT_tran, output = "Prediction-Accuracy Table")
+fit_lda
+
+fit_urban_res_sig_final <- fit_urban_res_sig_fil %>% filter(Index %in% colnames(FTwMT_tran)[-1]) %>% merge(., fit_lda$original$scaling, by.x = 1, by.y = 0)
+# Plot
+significant_taxa_boxplot("Urban", fit_urban_res_sig_final$Taxa, fit_urban_res_sig_final$Index, Metadata, c("Gender", "Age_grp"))
+
+significant_taxa_boxplot <- function(Var, Taxa_lst, Taxa_index, Metadata, Co_Var){
+    # at most 2 additional Co_Vars
+    MT <- Metadata
+    # select significantly changed taxa
+    FT <- FeatureTbl_maaslin %>% rownames_to_column(var = "Taxa") %>% dplyr::select(Taxa, one_of(MT$SampleID)) %>% filter(Taxa %in% Taxa_lst)
+    FT_2 <- t(FT[,2:ncol(FT)])
+    colnames(FT_2) <- FT$Taxa
+    N_features <- length(Taxa_lst)
+    # Complete dataframe
+    FTwMT <- merge(FT_2, MT, by.x = 0, by.y = 1, all.x = T) %>% column_to_rownames(var = "Row.names") %>% gather(key = "Taxa", value = "Count", c(1:N_features)) %>% dplyr::select(Taxa, Count, everything())
+    for (i in seq(N_features)){
+        Tmp_taxa <- Taxa_lst[i]
+        Tmp <- FTwMT %>% filter(Taxa==Tmp_taxa)
+        Tmp_sum <- Tmp  %>% group_by(get(Var), get(Co_Var[1]), get(Co_Var[2])) %>% summarise(N = n(), N.not0 = sum(Count!=0), Mean = mean(Count)) %>% mutate(Label = paste0("N=", N.not0, "/", N)) %>% ungroup()
+        Label_y = -(range(Tmp$Count)[2] - range(Tmp$Count)[1])/8
+        colnames(Tmp_sum)[1:3] <- c(Var, Co_Var)
+        ggplot(Tmp, aes(x = get(Var), y = Count, color = get(Co_Var[1]))) +
+            geom_boxplot() +
+            geom_point(data = Tmp_sum, aes(y = Mean), shape = 23, fill = "black", position = position_dodge(width = 0.75)) +
+            geom_text(data = Tmp_sum, aes(y = Label_y, label = Label, angle = 45), position = position_dodge(width = 0.75), size = 2.8) +
+            facet_grid(.~get(Co_Var[2])) +
+            theme_Publication() + theme(aspect.ratio = 1.5) +
+            labs(x = Var, y = "Count/10,000", color = Co_Var[1], title = str_wrap(paste0(Taxa_index[i], "-", Tmp_taxa), width = 40))
+        print(last_plot())
+        set_panel_size(file = paste0("output/figures/additional/Taxa_maaslin2_", Yr, "_", Var, "_",Taxa_index[i], ".pdf"), width = unit(2, "in"), height = unit(3, "in"), useDingbats = F)
+    }
+}
+```
+
+############
+Age
+############
+```{r}
+fit_age_res <- fit$results %>% filter(metadata == "Age_grp") %>% mutate(value = ifelse(qval>0.25, NA, value), qval = ifelse(qval>0.25, NA, qval))
+fit_age_res_sig <- fit_age_res$feature[!is.na(fit_age_res$qval)]
+```
+**Abundance Figures of significant taxa**
+```{r}
+fit_age_res_sig_fil <- taxa_filtered("Age_grp", fit_age_res_sig, Metadata)
+```
+
+**LDA analysis**
+```{r}
+FT <- FeatureTbl_maaslin %>% rownames_to_column(var = "Taxa") %>% dplyr::select(Taxa, one_of(Metadata$SampleID)) %>% filter(Taxa %in% fit_age_res_sig_fil$Taxa) 
+FT_2 <- t(FT[,2:ncol(FT)])
+colnames(FT_2) <- fit_age_res_sig_fil$Index[match(FT$Taxa, fit_age_res_sig_fil$Taxa)]
+
+FTwMT <- merge(FT_2, Metadata, by.x = 0, by.y = 1, all.x = T) %>% dplyr::select(Age_grp, c(2:(ncol(FT_2)+1)))
+
+# check colinearity
+corDF <- cor(FTwMT[, 2:ncol(FTwMT)], method = "spearman")
+dissimilarity <- 1 - abs(corDF)
+distance <- as.dist(dissimilarity)
+hc <- hclust(distance)
+plot(hc)
+clusterV = cutree(hc,h=0.2)  # the value h here is correspond to the correlation coefficient; 0.2 is used so that those species with more than 0.8  will be deemed as the same group
+
+# Modify the dataset so that only representative taxa of a cluster remain.
+## The representative taxa is the leaf taxa of the cluster
+for (i in seq(max(clusterV))){
+    MMs <- names(clusterV)[clusterV==i]
+    if (length(MMs)==1){
+        next
+    }
+    MM_tax <- fit_age_res_sig_fil %>% filter(Index %in% MMs) %>% mutate(pathString = Taxa)
+    MM_tree <- as.Node(MM_tax, pathDelimiter = "|")
+    MM_leaves <- MM_tree$Get("Taxa", filterFun = isLeaf)  # this will return a vector of chr
+    MM_leavs_index <- fit_age_res_sig_fil %>% filter(Taxa %in% MM_leaves) %>% pull(Index)
+    MM_leavs_exclude <- MMs[MMs!=MM_leavs_index]
+    FTwMT <- FTwMT %>% dplyr::select(-one_of(MM_leavs_exclude))
+}
+
+FTwMT_tran <- FTwMT %>% mutate_at(vars(-1), function(x){asin(sqrt(x/10000)) %>% scale})
+FTwMT_tran$Age_grp<- factor(FTwMT_tran$Age_grp)
+
+fit_lda <- LDA(Age_grp ~ ., data = FTwMT_tran, output = "Prediction-Accuracy Table")
+fit_lda
+
+fit_age_res_sig_final <- fit_age_res_sig_fil %>% filter(Index %in% colnames(FTwMT_tran)[-1]) %>% merge(., fit_lda$original$scaling, by.x = 1, by.y = 0)
+
+significant_taxa_boxplot("Age_grp", fit_age_res_sig_final$Taxa, fit_age_res_sig_final$Index, Metadata, c("Urban", "Gender"))
+```
+
+############
+Gender
+############
+```{r}
+fit_gender_res <- fit$results %>% filter(metadata == "Gender") %>% mutate(value = ifelse(qval>0.25, NA, value), qval = ifelse(qval>0.25, NA, qval))
+fit_gender_res_sig <- fit_gender_res$feature[!is.na(fit_gender_res$qval)]
+```
+**Abundance Figures of significant taxa**
+```{r}
+fit_gender_res_sig_fil <- taxa_filtered("Gender", fit_gender_res_sig, Metadata)
+```
+
+**LDA analysis**
+```{r}
+FT <- FeatureTbl_maaslin %>% rownames_to_column(var = "Taxa") %>% dplyr::select(Taxa, one_of(Metadata$SampleID)) %>% filter(Taxa %in% fit_gender_res_sig_fil$Taxa) 
+FT_2 <- t(FT[,2:ncol(FT)])
+colnames(FT_2) <- fit_gender_res_sig_fil$Index[match(FT$Taxa, fit_gender_res_sig_fil$Taxa)]
+
+FTwMT <- merge(FT_2, Metadata, by.x = 0, by.y = 1, all.x = T) %>% dplyr::select(Gender, c(2:(ncol(FT_2)+1)))
+
+# check colinearity
+corDF <- cor(FTwMT[, 2:ncol(FTwMT)], method = "spearman")
+dissimilarity <- 1 - abs(corDF)
+distance <- as.dist(dissimilarity)
+hc <- hclust(distance)
+plot(hc)
+clusterV = cutree(hc,h=0.2)  # the value h here is correspond to the correlation coefficient; 0.2 is used so that those species with more than 0.8  will be deemed as the same group
+
+# Modify the dataset so that only representative taxa of a cluster remain.
+## The representative taxa is the leaf taxa of the cluster
+for (i in seq(max(clusterV))){
+    MMs <- names(clusterV)[clusterV==i]
+    if (length(MMs)==1){
+        next
+    }
+    MM_tax <- fit_gender_res_sig_fil %>% filter(Index %in% MMs) %>% mutate(pathString = Taxa)
+    MM_tree <- as.Node(MM_tax, pathDelimiter = "|")
+    MM_leaves <- MM_tree$Get("Taxa", filterFun = isLeaf)  # this will return a vector of chr
+    MM_leavs_index <- fit_gender_res_sig_fil %>% filter(Taxa %in% MM_leaves) %>% pull(Index)
+    MM_leavs_exclude <- MMs[MMs!=MM_leavs_index]
+    FTwMT <- FTwMT %>% dplyr::select(-one_of(MM_leavs_exclude))
+}
+
+FTwMT_tran <- FTwMT %>% mutate_at(vars(-1), function(x){asin(sqrt(x/10000)) %>% scale})
+FTwMT_tran$Gender<- factor(FTwMT_tran$Gender)
+
+fit_lda <- LDA(Gender ~ ., data = FTwMT_tran, output = "Prediction-Accuracy Table")
+fit_lda
+
+fit_gender_res_sig_final <- fit_gender_res_sig_fil %>% filter(Index %in% colnames(FTwMT_tran)[-1]) %>% merge(., fit_lda$original$scaling, by.x = 1, by.y = 0)
+
+significant_taxa_boxplot("Gender", fit_gender_res_sig_final$Taxa, fit_gender_res_sig_final$Index, Metadata, c("Urban", "Age_grp"))
+```
+
+Tree
+```{r}
+# filter the fit results so that those feature which appeared in only 5 samples were removed
+Tree_tbl <- fit$results %>% filter(N.not.zero > 5) %>% 
+    mutate(feature2 = gsub("\\[|\\]", "", feature), feature2 = gsub("D_\\d_([^\\|])", "\\1", feature2), feature2 = gsub("D_(\\d)_", "D\\1", feature2), feature2 = gsub(" ", "_", feature2))
+Tree_tbl2 <- fit2$results %>% filter(N.not.zero > 5) %>% 
+    mutate(feature2 = gsub("\\[|\\]", "", feature), feature2 = gsub("D_\\d_([^\\|])", "\\1", feature2), feature2 = gsub("D_(\\d)_", "D\\1", feature2), feature2 = gsub(" ", "_", feature2))
+
+Tree_tbls <- split(Tree_tbl, f = Tree_tbl$metadata)
+Tree_maps <- list()
+
+Tree_maps[["Age_grp"]] <- Tree_tbls$Age_grp %>% mutate(Sig_test = ifelse(feature %in% fit_age_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_age_res_sig_final, by.x = 1, by.y = 2, all = T)
+
+Tree_maps[["Urban"]] <- Tree_tbls$Urban %>% mutate(Sig_test = ifelse(feature %in% fit_urban_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_urban_res_sig_final, by.x = 1, by.y = 2, all = T) %>% dplyr::select(-LD2)
+
+Tree_maps[["Urban2"]] <- Tree_tbl2 %>% filter(value == "C") %>% mutate(Sig_test = ifelse(feature %in% fit_urban_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_urban_res_sig_final, by.x = 1, by.y = 2, all = T) %>% dplyr::select(-LD2) %>% filter(!is.na(Sig_test))
+
+
+Tree_maps[["Gender"]] <- Tree_tbls$Gender %>% mutate(Sig_test = ifelse(feature %in% fit_gender_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_gender_res_sig_final, by.x = 1, by.y = 2, all = T)
+
+Tree_map <- do.call("rbind", Tree_maps) %>% group_by(Sig_test, feature) %>% mutate(Flag = ifelse(is.na(Sig_test), seq(n()), 0)) %>% filter(Flag <= 1) %>%
+    ungroup() %>% mutate(feature2 = ifelse(grepl(pattern = "D\\d", feature2), paste(feature2, seq(n()), sep = "-"), feature2), pathString = feature2) %>%
+    separate(feature2, into = c("Domain", "Phylum", "Class", "Order", "Family", "Genus"), sep = "\\|", remove = F) %>%
+    mutate(Node_label = ifelse(!is.na(Genus), Genus, ifelse(!is.na(Family), Family, ifelse(!is.na(Order), Order, ifelse(!is.na(Class), Class, ifelse(!is.na(Phylum), Phylum, Domain)))))) %>%
+    dplyr::select(Node_label, everything(), -c(feature2, Flag))
+
+Tree_map_filtered <- Tree_map %>% filter(!is.na(Sig_test)) %>% mutate(Sig_test2 = ifelse(is.na(Sig_test), "No", "Yes"), metadata = ifelse(value=="Low", "Urban-L", ifelse(value=="Medium", "Urban-M", metadata)))
+
+#####################
+Tree_sig_matrix <- Tree_map_filtered %>% mutate(Contri = round(LD1 * sign(coef), 2)) %>% dplyr::select(Node_label, metadata, Contri) %>% spread(key = metadata, value = Contri) %>% column_to_rownames(var = "Node_label")
+
+Tree_fit <- as.Node(Tree_map_filtered, pathDelimiter = "|")
+Tree_fit_phylo <- Tree_fit %>% as.phylo.Node
+
+p <- ggtree(Tree_fit_phylo)
+p
+
+p1 <- p + geom_nodepoint(fill = "#00BFC4", shape = 21, size = 1.5) +
+    geom_tippoint(fill = "#F8766D", shape = 21, size = 2) + 
+    geom_tiplab(align = T, offset = 1, size = 2) +
+    geom_nodelab(size = 2, vjust = -0.3)
+
+gheatmap(p1, Tree_sig_matrix, offset=20, width=0.2, font.size=2, colnames_angle=-45, hjust=0, color = "black") +
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, na.value = "grey90")
+ggsave(file = "output/figures/fig_maaslin_2016.pdf", width = 7, unit = "in", useDingbats = F)
+```
+
+```{r}
+Tree_tbl2 <- fit2$results %>% filter(N.not.zero > 5) %>% 
+    mutate(feature2 = gsub("\\[|\\]", "", feature), feature2 = gsub("D_\\d_([^\\|])", "\\1", feature2), feature2 = gsub("D_(\\d)_", "D\\1", feature2), feature2 = gsub(" ", "_", feature2))
+
+Tree_maps[["Age_grp"]] <- Tree_tbls$Age_grp %>% mutate(Sig_test = ifelse(feature %in% fit_age_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_age_res_sig_final, by.x = 1, by.y = 2, all = T)
+
+Tree_maps[["Urban"]] <- Tree_tbls$Urban %>% mutate(Sig_test = ifelse(feature %in% fit_urban_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_urban_res_sig_final, by.x = 1, by.y = 2, all = T) %>% dplyr::select(-LD2)
+
+Tree_maps[["Urban2"]] <- Tree_tbl %>% filter(value == "C") %>% mutate(Sig_test = ifelse(feature %in% fit_urban_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_urban_res_sig_final, by.x = 1, by.y = 2, all = T) %>% dplyr::select(-LD2) %>% filter(!is.na(Sig_test))
+
+Tree_maps[["Gender"]] <- Tree_tbls$Gender %>% mutate(Sig_test = ifelse(feature %in% fit_gender_res_sig_final$Taxa, ifelse(sign(coef)==1, paste0(metadata, value, "-High"), paste0(metadata, value, "-Low")), NA)) %>% merge(., fit_gender_res_sig_final, by.x = 1, by.y = 2, all = T)
+
+Tree_map <- do.call("rbind", Tree_maps) %>% group_by(Sig_test, feature) %>% mutate(Flag = ifelse(is.na(Sig_test), seq(n()), 0)) %>% filter(Flag <= 1) %>%
+    ungroup() %>% mutate(feature2 = ifelse(grepl(pattern = "D\\d", feature2), paste(feature2, seq(n()), sep = "-"), feature2), pathString = feature2) %>%
+    separate(feature2, into = c("Domain", "Phylum", "Class", "Order", "Family", "Genus"), sep = "\\|", remove = F) %>%
+    mutate(Node_label = ifelse(!is.na(Genus), Genus, ifelse(!is.na(Family), Family, ifelse(!is.na(Order), Order, ifelse(!is.na(Class), Class, ifelse(!is.na(Phylum), Phylum, Domain)))))) %>%
+    dplyr::select(Node_label, everything(), -c(feature2, Flag))
+
+Tree_map_filtered <- Tree_map %>% filter(!is.na(Sig_test)) %>% mutate(Sig_test2 = ifelse(is.na(Sig_test), "No", "Yes"), metadata = ifelse(value=="Low", "Urban-L", ifelse(value=="Medium", "Urban-M", metadata)))
+```
+

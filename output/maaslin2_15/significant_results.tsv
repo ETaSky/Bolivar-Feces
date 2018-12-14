@@ -1,39 +1,78 @@
 Metadata	Feature	Value	Coefficient	N	N.not.0	P.value	Q.value
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Coprococcus 1	Medium	-0.000471411121916671	154	119	0.000107057348856846	0.0362121482508281
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Ruminococcaceae|D_5_	Medium	-0.00183327966606488	154	134	7.18038976206699e-05	0.0362121482508281
-Urban	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mollicutes RF39|D_4_|D_5_	Medium	-0.00324695378684864	154	124	5.78630889244935e-05	0.0362121482508281
-Urban	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mollicutes RF39|D_4_uncultured prokaryote|D_5_uncultured prokaryote	Medium	-0.000527468541089273	154	52	0.0001014721424447	0.0362121482508281
-Age_grp	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_Prevotellaceae|D_5_Prevotella 2	Children	0.0140558278596507	154	150	0.000157512554019808	0.0426228971177601
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Clostridiales vadinBB60 group|D_5_uncultured bacterium	Medium	-0.0049347092883806	154	140	0.000434761034257091	0.096259108596904
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Family XIII|D_5_Family XIII UCG-001	Medium	-0.0001886238342691	154	66	0.000569159548244813	0.096259108596904
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_CAG-56	Medium	0.000420033438545084	154	45	0.0005259601986983	0.096259108596904
-Age_grp	D_0_Bacteria|D_1_Lentisphaerae|D_2_Lentisphaeria|D_3_Victivallales|D_4_Victivallaceae|D_5_	Children	-8.17776835992871e-05	154	14	0.000802768535100584	0.108614582799109
-Urban	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mollicutes RF39|D_4_uncultured bacterium|D_5_uncultured bacterium	Medium	-0.0032210330603496	154	131	0.000757433258320954	0.108614582799109
-Age_grp	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Ruminococcaceae|D_5_Faecalibacterium	Children	0.0149822066764918	154	154	0.00105635314295965	0.129931436584037
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Agathobacter	Medium	-0.00502431454171482	154	105	0.00140392677036039	0.135679494306972
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Ruminococcaceae|D_5_Ruminococcaceae UCG-010	Medium	-0.00802672896724613	154	140	0.00126363432197191	0.135679494306972
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Erysipelotrichia|D_3_Erysipelotrichales|D_4_Erysipelotrichaceae|D_5_Erysipelotrichaceae UCG-004	Medium	-0.001053047777504	154	88	0.00135637533836384	0.135679494306972
-Urban	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_Tannerellaceae|D_5_Parabacteroides	Medium	0.00436229872706666	154	115	0.0017403702269956	0.147170057320316
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Ruminococcaceae|D_5_Ruminococcaceae UCG-013	Medium	-0.00122798686666462	154	110	0.00169352633176038	0.147170057320316
-Gender	D_0_Bacteria|D_1_Proteobacteria|D_2_Deltaproteobacteria|D_3_Desulfovibrionales|D_4_Desulfovibrionaceae|D_5_Desulfovibrio	M	-0.00136379561307888	154	106	0.00205351168775399	0.163435371384185
-Urban	D_0_Archaea|D_1_Euryarchaeota|D_2_Methanobacteria|D_3_Methanobacteriales|D_4_Methanobacteriaceae|D_5_Methanobrevibacter	Medium	-0.00157057462309743	154	112	0.00256059110078473	0.164660469075228
-Urban	D_0_Bacteria|D_1_Cyanobacteria|D_2_Melainabacteria|D_3_Gastranaerophilales|D_4_gut metagenome|D_5_gut metagenome	Medium	-0.00123890840722788	154	34	0.00267740600122322	0.164660469075228
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_|D_5_	Medium	-0.000518412141859809	154	77	0.00261272465762302	0.164660469075228
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Clostridiales vadinBB60 group|D_5_uncultured rumen bacterium	Medium	-0.00056116518816443	154	38	0.00232839217892088	0.164660469075228
-Urban	D_0_Bacteria|D_1_Proteobacteria|D_2_Alphaproteobacteria|D_3_|D_4_|D_5_	Medium	-0.000344106703903497	154	43	0.00223073812120359	0.164660469075228
-Gender	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Family XIII|D_5_Family XIII AD3011 group	M	-0.000509293028727297	154	105	0.00312958024620059	0.167288268645306
-Gender	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Family XIII|D_5_Family XIII UCG-001	M	-0.000158574972022552	154	66	0.0029788987603574	0.167288268645306
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_[Eubacterium] ruminantium group	Medium	0.00211404406241904	154	105	0.00321470434942939	0.167288268645306
-Urban	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mollicutes RF39|D_4_uncultured Firmicutes bacterium|D_5_uncultured Firmicutes bacterium	Medium	5.33751231932324e-05	154	8	0.00315617454646011	0.167288268645306
-Gender	D_0_Bacteria|D_1_Firmicutes|D_2_Erysipelotrichia|D_3_Erysipelotrichales|D_4_Erysipelotrichaceae|D_5_Erysipelotrichaceae UCG-004	M	0.000938950808310803	154	88	0.00347771864841547	0.174272345603931
-Age_grp	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Coprococcus 1	Children	0.000346247347844747	154	119	0.00405957440192774	0.196164434493151
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Oribacterium	Medium	-0.000274386718792572	154	72	0.00459643726961581	0.200871287913701
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Peptostreptococcaceae|D_5_Paeniclostridium	Medium	0.000141458529701264	154	6	0.00454045568296555	0.200871287913701
-Urban	D_0_Bacteria|D_1_Proteobacteria|D_2_Gammaproteobacteria|D_3_Betaproteobacteriales|D_4_Burkholderiaceae|D_5_Sutterella	Medium	0.00210509870956845	154	120	0.00460237245035088	0.200871287913701
-Urban	D_0_Bacteria|D_1_|D_2_|D_3_|D_4_|D_5_	Medium	-6.13489196816328e-05	154	27	0.00498036810657628	0.204828080216452
-Gender	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Christensenellaceae|D_5_Christensenellaceae R-7 group	M	-0.00460650043700961	154	145	0.00511542326014385	0.204828080216452
-Age_grp	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mycoplasmatales|D_4_Mycoplasmataceae|D_5_Candidatus Lumbricincola	Children	-0.0132132789508001	154	32	0.00514719492044298	0.204828080216452
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Erysipelotrichia|D_3_Erysipelotrichales|D_4_Erysipelotrichaceae|D_5_Asteroleplasma	Medium	0.00191683492435614	154	31	0.00612527123607025	0.236785485211516
-Gender	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_p-2534-18B5 gut group|D_5_uncultured bacterium	M	-0.0073468408235439	154	61	0.00632350689691646	0.237658467542443
-Age_grp	D_0_Archaea|D_1_Euryarchaeota|D_2_Thermoplasmata|D_3_Methanomassiliicoccales|D_4_Methanomethylophilaceae|D_5_Candidatus Methanogranum	Children	-0.000278415674027439	154	28	0.00687683862691758	0.244851649005776
-Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Lachnospiraceae UCG-003	Medium	0.000521295523139746	154	38	0.00683426057934373	0.244851649005776
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Coprococcus 1	Medium	-0.000179003195139224	154	119	2.01400277090215e-05	0.0114850037163471
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Ruminococcaceae|D_5_	Medium	-0.000702209512603855	154	134	2.08628587036279e-05	0.0114850037163471
+Urban	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mollicutes RF39|D_4_|D_5_	Medium	-0.00119526466987934	154	124	5.46939605841261e-05	0.0200726835343743
+Urban	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mollicutes RF39|D_4_uncultured prokaryote|D_5_uncultured prokaryote	Medium	-0.000192025210603451	154	52	8.25903837652352e-05	0.022733003131381
+Age_grp	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_Prevotellaceae|D_5_Prevotella 2	Children	0.00443970019861097	154	150	0.000143801434974745	0.0316650759814389
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Family XIII|D_5_Family XIII UCG-001	Medium	-7.21779629194214e-05	154	66	0.000262662558880932	0.0481985795546511
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Clostridiales vadinBB60 group|D_5_uncultured bacterium	Medium	-0.00188315508568632	154	140	0.000388869859731734	0.0611636736520913
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_CAG-56	Medium	0.000136038062135179	154	45	0.000722161791865152	0.0743909657810912
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Ruminococcaceae|D_5_Ruminococcaceae UCG-010	Medium	-0.00309899842567756	154	140	0.000770174636082921	0.0743909657810912
+Age_grp	D_0_Bacteria|D_1_Lentisphaerae|D_2_Lentisphaeria|D_3_Victivallales|D_4_Victivallaceae|D_5_	Children	-3.191677820048e-05	154	14	0.000810800716960122	0.0743909657810912
+Urban	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mollicutes RF39|D_4_uncultured bacterium|D_5_uncultured bacterium	Medium	-0.00119967989089839	154	131	0.000654347946399521	0.0743909657810912
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales	Medium	-0.0183317725412542	154	154	0.000698288851768995	0.0743909657810912
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Agathobacter	Medium	-0.00168742109221186	154	105	0.00117679972526398	0.0762150880891554
+Age_grp	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Ruminococcaceae|D_5_Faecalibacterium	Children	0.00483768312677805	154	154	0.00110485026982509	0.0762150880891554
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Ruminococcaceae|D_5_Ruminococcaceae UCG-013	Medium	-0.000448845535161005	154	110	0.00117586310755145	0.0762150880891554
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Erysipelotrichia|D_3_Erysipelotrichales|D_4_Erysipelotrichaceae|D_5_Erysipelotrichaceae UCG-004	Medium	-0.000374211103400153	154	88	0.00106882418549271	0.0762150880891554
+Age_grp	D_0_Archaea|D_1_Euryarchaeota|D_2_Thermoplasmata|D_3_Methanomassiliicoccales|D_4_Methanomethylophilaceae	Children	-0.000149146638934473	154	38	0.00106114171935619	0.0762150880891554
+Urban	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_Tannerellaceae|D_5_Parabacteroides	Medium	0.00152017734418225	154	115	0.00154703093381622	0.0892127686878182
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_|D_5_	Medium	-0.000186758101351427	154	77	0.00148904909781168	0.0892127686878182
+Urban	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_Tannerellaceae	Medium	0.00151316122700074	154	116	0.00162057708788044	0.0892127686878182
+Gender	D_0_Bacteria|D_1_Proteobacteria|D_2_Deltaproteobacteria|D_3_Desulfovibrionales|D_4_Desulfovibrionaceae|D_5_Desulfovibrio	M	-0.000500400599786425	154	106	0.00177778409722404	0.093206680525889
+Gender	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Family XIII|D_5_Family XIII AD3011 group	M	-0.000189591156432866	154	105	0.00217853875957013	0.104285703229857
+Urban	D_0_Bacteria|D_1_Proteobacteria|D_2_Alphaproteobacteria|D_3_|D_4_|D_5_	Medium	-0.000125569598454911	154	43	0.00214195651641747	0.104285703229857
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Clostridiales vadinBB60 group|D_5_uncultured rumen bacterium	Medium	-0.000198502182047885	154	38	0.0025132677001366	0.109748120082284
+Gender	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Family XIII|D_5_Family XIII UCG-001	M	-5.79959913742184e-05	154	66	0.00259169039249718	0.109748120082284
+Urban	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mollicutes RF39|D_4_uncultured Firmicutes bacterium|D_5_uncultured Firmicutes bacterium	Medium	1.79097931064079e-05	154	8	0.00250990992384528	0.109748120082284
+Urban	D_0_Bacteria|D_1_Cyanobacteria|D_2_Melainabacteria|D_3_Gastranaerophilales|D_4_gut metagenome|D_5_gut metagenome	Medium	-0.000468802454102155	154	34	0.00274934950472069	0.111481154109894
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Oribacterium	Medium	-9.71471360966109e-05	154	72	0.00283512471850775	0.111481154109894
+Urban	D_0_Archaea|D_1_Euryarchaeota|D_2_Methanobacteria|D_3_Methanobacteriales|D_4_Methanobacteriaceae|D_5_Methanobrevibacter	Medium	-0.000605363330659077	154	112	0.00324508444670542	0.119094599194089
+Urban	D_0_Archaea|D_1_Euryarchaeota|D_2_Methanobacteria|D_3_Methanobacteriales|D_4_Methanobacteriaceae	Medium	-0.000605964643249639	154	112	0.003222435703815	0.119094599194089
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_[Eubacterium] ruminantium group	Medium	0.000652146220808165	154	105	0.00366534667369179	0.126776011450183
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Peptostreptococcaceae|D_5_Paeniclostridium	Medium	5.03636318862241e-05	154	6	0.00374935671336243	0.126776011450183
+Gender	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Christensenellaceae	M	-0.00190712307675999	154	145	0.0037998259562725	0.126776011450183
+Gender	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Christensenellaceae|D_5_Christensenellaceae R-7 group	M	-0.00181881862650022	154	145	0.00429313160834695	0.13789418044123
+Gender	D_0_Bacteria|D_1_Firmicutes|D_2_Erysipelotrichia|D_3_Erysipelotrichales|D_4_Erysipelotrichaceae|D_5_Erysipelotrichaceae UCG-004	M	0.000318122901956162	154	88	0.00438355705308177	0.13789418044123
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Clostridiales vadinBB60 group	Medium	-0.00291992286004262	154	147	0.00452792287363925	0.138478974552134
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Lachnospiraceae UCG-003	Medium	0.000184292146851228	154	38	0.00522103675707813	0.15536112079846
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Clostridiales vadinBB60 group|D_5_Clostridiales bacterium enrichment culture clone 06-1235251-67	Medium	-0.000102465290840632	154	70	0.00554954326544052	0.160790714085527
+Gender	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_p-2534-18B5 gut group|D_5_uncultured bacterium	M	-0.00284273265595167	154	61	0.00602397391783213	0.16176573862276
+Age_grp	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mycoplasmatales|D_4_Mycoplasmataceae|D_5_Candidatus Lumbricincola	Children	-0.0053463593802909	154	32	0.00592158248225016	0.16176573862276
+Gender	D_0_Bacteria|D_1_Proteobacteria|D_2_Deltaproteobacteria|D_3_Desulfovibrionales|D_4_Desulfovibrionaceae	M	-0.000527386668858391	154	130	0.00585301548076364	0.16176573862276
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Anaerostipes	Medium	-0.00121510418898863	154	120	0.00623347209164302	0.161858502757917
+Age_grp	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mycoplasmatales|D_4_Mycoplasmataceae	Children	-0.00530449283562336	154	39	0.00632144924485963	0.161858502757917
+Urban	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_p-2534-18B5 gut group|D_5_uncultured bacterium	Medium	-0.00284592641259493	154	61	0.00699427001874316	0.167406332405135
+Age_grp	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Clostridiales vadinBB60 group|D_5_uncultured rumen bacterium	Children	-0.000177025495106958	154	38	0.00695783726175417	0.167406332405135
+Gender	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Family XIII	M	-0.000340853201654674	154	120	0.00684717722751502	0.167406332405135
+Age_grp	D_0_Archaea|D_1_Euryarchaeota|D_2_Thermoplasmata|D_3_Methanomassiliicoccales|D_4_Methanomethylophilaceae|D_5_Candidatus Methanogranum	Children	-0.000107228798567223	154	28	0.0072767396043955	0.170461495839137
+Urban	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_Prevotellaceae|D_5_Prevotella 9	Medium	0.0188105084609345	154	153	0.00763499729459518	0.172968504143921
+Urban	D_0_Bacteria|D_1_Proteobacteria|D_2_Gammaproteobacteria|D_3_Betaproteobacteriales|D_4_Burkholderiaceae|D_5_Sutterella	Medium	0.000649186843018272	154	120	0.00769796249141883	0.172968504143921
+Age_grp	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Coprococcus 1	Children	0.000108823937513113	154	119	0.00835533542730274	0.183984486109206
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Erysipelotrichia|D_3_Erysipelotrichales|D_4_Erysipelotrichaceae|D_5_Asteroleplasma	Medium	0.000598001214228174	154	31	0.0089938454584169	0.184546132441781
+Urban	D_0_Bacteria|D_1_Proteobacteria|D_2_Alphaproteobacteria|D_3_Rhodospirillales|D_4_uncultured|D_5_unidentified rumen bacterium RF32	Medium	-9.81966363992984e-05	154	17	0.00877115203095338	0.184546132441781
+Urban	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales	Medium	0.0190364990608421	154	154	0.0090171853141749	0.184546132441781
+Urban	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia	Medium	0.0190073946423572	154	154	0.00905130894809823	0.184546132441781
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Ruminococcaceae	Medium	-0.0101574179005971	154	154	0.00922235502424395	0.184614779667138
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_	Medium	-0.00143067220001997	154	133	0.00939053302340806	0.184624586763791
+Urban	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_Prevotellaceae	Medium	0.0207986504560263	154	154	0.00957869050640131	0.185019969255225
+Age_grp	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Peptostreptococcaceae|D_5_Romboutsia	Children	-0.000690437548592622	154	70	0.010240825246285	0.193089802636684
+Urban	D_0_Bacteria|D_1_Proteobacteria|D_2_Gammaproteobacteria|D_3_Betaproteobacteriales|D_4_Burkholderiaceae	Medium	0.000700864719402637	154	128	0.0103472282975153	0.193089802636684
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Christensenellaceae|D_5_uncultured	Medium	-7.49617414318583e-05	154	22	0.0109850787471878	0.199040139673245
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Ruminococcaceae|D_5_Ruminiclostridium 9	Medium	-0.000121620401670154	154	102	0.0110276553315785	0.199040139673245
+Age_grp	D_0_Bacteria|D_1_Proteobacteria|D_2_Gammaproteobacteria|D_3_Pasteurellales|D_4_Pasteurellaceae|D_5_	Children	-3.18383066762436e-05	154	13	0.0113961763243748	0.20237403440543
+Age_grp	D_0_Bacteria|D_1_Kiritimatiellaeota|D_2_Kiritimatiellae|D_3_WCHB1-41|D_4_uncultured rumen bacterium|D_5_uncultured rumen bacterium	Children	-0.000915362509676547	154	53	0.0131446078166137	0.229717669937963
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Lachnospiraceae|D_5_Fusicatenibacter	Medium	0.000121198118367728	154	38	0.0134341242845361	0.229944669598547
+Gender	D_0_Bacteria|D_1_Tenericutes|D_2_Mollicutes|D_3_Mollicutes RF39|D_4_metagenome|D_5_metagenome	M	-0.00103660363879042	154	91	0.0135752983868352	0.229944669598547
+Gender	D_0_Bacteria|D_1_Actinobacteria|D_2_Coriobacteriia|D_3_Coriobacteriales|D_4_Eggerthellaceae|D_5_Senegalimassilia	M	-0.000153237549437727	154	101	0.015426356685685	0.23122523121079
+Urban	D_0_Bacteria|D_1_Actinobacteria|D_2_Coriobacteriia|D_3_Coriobacteriales|D_4_Eggerthellaceae|D_5_uncultured	Medium	2.62184214056752e-05	154	17	0.0148619707239167	0.23122523121079
+Urban	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_Marinifilaceae|D_5_Odoribacter	Medium	0.000109883936964478	154	44	0.01554102371444	0.23122523121079
+Urban	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_Rikenellaceae|D_5_dgA-11 gut group	Medium	-0.000965463895542069	154	35	0.0149944507384547	0.23122523121079
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Bacilli|D_3_Lactobacillales|D_4_Leuconostocaceae|D_5_Leuconostoc	Medium	6.23391082269635e-06	154	6	0.0154945841383	0.23122523121079
+Urban	D_0_Bacteria|D_1_Planctomycetes|D_2_Planctomycetacia|D_3_Pirellulales|D_4_Pirellulaceae|D_5_p-1088-a5 gut group	Medium	-5.44753905163547e-05	154	9	0.0152726821376349	0.23122523121079
+Urban	D_0_Bacteria|D_1_Proteobacteria|D_2_Alphaproteobacteria|D_3_Rhodospirillales|D_4_uncultured|D_5_	Medium	-0.000260661353608473	154	76	0.0145310444252103	0.23122523121079
+Urban	D_0_Bacteria|D_1_Proteobacteria|D_2_Alphaproteobacteria|D_3_Rickettsiales|D_4_Mitochondria|D_5_uncultured alpha proteobacterium	Medium	-1.71794772866696e-05	154	21	0.0153340282203058	0.23122523121079
+Urban	D_0_Bacteria|D_1_Firmicutes|D_2_Clostridia|D_3_Clostridiales|D_4_Christensenellaceae	Medium	-0.00164203900373926	154	145	0.0141626347657486	0.23122523121079
+Gender	D_0_Bacteria|D_1_Planctomycetes|D_2_Planctomycetacia|D_3_Pirellulales|D_4_Pirellulaceae|D_5_p-1088-a5 gut group	M	-5.30300964146385e-05	154	9	0.0160038824662445	0.234936994604469
+Age_grp	D_0_Bacteria|D_1_Proteobacteria|D_2_Gammaproteobacteria|D_3_Aeromonadales|D_4_Succinivibrionaceae|D_5_Ruminobacter	Children	-0.0124427676177408	154	106	0.0164771813325892	0.238702324305009
+Age_grp	D_0_Bacteria|D_1_Bacteroidetes|D_2_Bacteroidia|D_3_Bacteroidales|D_4_Marinifilaceae|D_5_Sanguibacteroides	Children	-6.85147864687907e-06	154	4	0.0168021412316299	0.240248798649669
