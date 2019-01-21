@@ -22,6 +22,9 @@ library(Maaslin2)
 library(MASS)
 library(conflicted)
 conflict_prefer("filter", "dplyr")
+library(data.tree)
+library(flipMultivariates)
+library(ggtree)
 
 LIBDIR="~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/lib/"
 WORKDIR = "~/Dropbox/41-JCHWANG-NYU/Projects/10-Bolivar2018/5-MS-BolivarAmerindians/"
@@ -84,6 +87,8 @@ Metadata <- Work_Map_15 %>% filter(SampleGroup=="Villagers")
 # 
 # fit <- Maaslin2(input_data = FeatureTbl_maaslin, input_metadata = Metadata %>% column_to_rownames(var = "SampleID"), output = "output/maaslin2_15/", fixed_effects = "Urban,Gender,Age_grp", cores = 4)
 # save(fit, file = "output/Maaslin_fit_2015.Rdata")
+load("output/Maaslin_fit_2015.Rdata")
+
 ```
 #################
 Urban
@@ -94,8 +99,6 @@ fit_urban_res_sig <- fit_urban_res$feature[!is.na(fit_urban_res$qval)]
 ```
 **Abundance Figures of significant taxa**
 ```{r}
-fit_urban_res_sig_fil <- taxa_filtered("Urban", fit_urban_res_sig, Metadata)
-
 taxa_filtered <- function(Var, Taxa_lst, Metadata){
     # This function filter the feature table so that a feature is included only if there are at least half of the samples in one level of the primary variable have that feature.
     MT <- Metadata
@@ -116,6 +119,9 @@ taxa_filtered <- function(Var, Taxa_lst, Metadata){
     TT <- substr(Var, 1, 1)
     return(data.frame(Index = paste0(TT, seq(length(Taxa_lst_final))), Taxa = Taxa_lst_final, stringsAsFactors = F))
 }
+fit_urban_res_sig_fil <- taxa_filtered("Urban", fit_urban_res_sig, Metadata)
+
+
 ```
 
 **LDA analysis**
@@ -157,8 +163,6 @@ fit_lda
 
 fit_urban_res_sig_final <- fit_urban_res_sig_fil %>% filter(Index %in% colnames(FTwMT_tran)[-1]) %>% merge(., fit_lda$original$scaling, by.x = 1, by.y = 0)
 # Plot
-significant_taxa_boxplot("Urban", fit_urban_res_sig_final$Taxa, fit_urban_res_sig_final$Index, Metadata, c("Gender", "Age_grp"))
-
 significant_taxa_boxplot <- function(Var, Taxa_lst, Taxa_index, Metadata, Co_Var){
     # at most 2 additional Co_Vars
     MT <- Metadata
@@ -186,6 +190,10 @@ significant_taxa_boxplot <- function(Var, Taxa_lst, Taxa_index, Metadata, Co_Var
         set_panel_size(file = paste0("output/figures/additional/Taxa_maaslin2_2015_", Var, "_",Taxa_index[i], ".pdf"), width = unit(2, "in"), height = unit(3, "in"), useDingbats = F)
     }
 }
+
+#significant_taxa_boxplot("Urban", fit_urban_res_sig_final$Taxa, fit_urban_res_sig_final$Index, Metadata, c("Gender", "Age_grp"))
+
+
 ```
 
 ############
@@ -239,7 +247,7 @@ fit_lda
 
 fit_age_res_sig_final <- fit_age_res_sig_fil %>% filter(Index %in% colnames(FTwMT_tran)[-1]) %>% merge(., fit_lda$original$scaling, by.x = 1, by.y = 0)
 
-significant_taxa_boxplot("Age_grp", fit_age_res_sig_final$Taxa, fit_age_res_sig_final$Index, Metadata, c("Urban", "Gender"))
+#significant_taxa_boxplot("Age_grp", fit_age_res_sig_final$Taxa, fit_age_res_sig_final$Index, Metadata, c("Urban", "Gender"))
 ```
 
 ############
@@ -293,7 +301,7 @@ fit_lda
 
 fit_gender_res_sig_final <- fit_gender_res_sig_fil %>% filter(Index %in% colnames(FTwMT_tran)[-1]) %>% merge(., fit_lda$original$scaling, by.x = 1, by.y = 0)
 
-significant_taxa_boxplot("Gender", fit_gender_res_sig_final$Taxa, fit_gender_res_sig_final$Index, Metadata, c("Urban", "Age_grp"))
+#significant_taxa_boxplot("Gender", fit_gender_res_sig_final$Taxa, fit_gender_res_sig_final$Index, Metadata, c("Urban", "Age_grp"))
 ```
 
 Tree
@@ -340,9 +348,12 @@ Metadata <- Work_Map_16 %>% filter(SampleGroup=="Villagers")
 Yr = 2016
 # 
 # fit <- Maaslin2(input_data = FeatureTbl_maaslin, input_metadata = Metadata %>% column_to_rownames(var = "SampleID"), output = "output/maaslin2_16/", fixed_effects = "Urban,Gender,Age_grp", cores = 4)
+# save(fit, file = "output/Maaslin_fit_2016.Rdata")
+load("output/Maaslin_fit_2016.Rdata")
 # Metadata2 <- Metadata %>% mutate(Urban2 = ifelse(Urban=="Very_low", "B", ifelse(Urban=="Low", "A", "C")))
 # fit2 <- Maaslin2(input_data = FeatureTbl_maaslin, input_metadata = Metadata2 %>% column_to_rownames(var = "SampleID"), output = "tt/", fixed_effects = "Urban2,Gender,Age_grp", cores = 4)
-# save(fit, file = "output/Maaslin_fit_2016.Rdata")
+# save(fit2, file = "output/Maaslin_fit2_2016.Rdata")
+load("output/Maaslin_fit2_2016.Rdata")
 ```
 #################
 Urban

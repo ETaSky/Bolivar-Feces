@@ -1,3 +1,6 @@
 .DS_Store
 OutsideResources/
 tmp/
+bin/*_files/
+bin/*_cache/
+bin/*.html
